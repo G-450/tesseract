@@ -1,0 +1,40 @@
+# Project Planning & Context
+docs/context/
+prd.md
+ddmms.md
+NEXT_TASK.md
+PROJECT_STATUS.md
+# Datasets
+datasets/raw/*
+datasets/processed/*
+datasets/interim/*
+datasets/cache/*
+datasets/metadata/*
+!datasets/**/.gitkeep
+
+# Model Outputs & Experiments
+outputs/
+experiments/
+*.pkl
+*.pt
+*.pth
+
+# Python Caches & Virtual Environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+
+# Testing and Type checking
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
