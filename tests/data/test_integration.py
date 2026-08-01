@@ -2,12 +2,12 @@ import subprocess
 import sys
 from typing import Any
 
-import yaml  # type: ignore
+import yaml
 
 from tests.fixtures.data_fixtures import create_synthetic_dataset
 
 
-def test_cli_integration(tmp_path: Any) -> None:  # type: ignore
+def test_cli_integration(tmp_path: Any) -> None:
     # Setup dataset
     data_dir = tmp_path / "datasets" / "raw"
     data_dir.mkdir(parents=True)

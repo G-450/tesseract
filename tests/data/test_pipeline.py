@@ -1,12 +1,13 @@
 import json
 
 import torch
+from typing import Any
 
 from src.config.dataset_config import DatasetConfig, GraphConfig
 from src.data.pipeline import GraphPipeline
 
 
-def test_pipeline_processing(tmp_path) -> None:  # type: ignore
+def test_pipeline_processing(tmp_path: Any) -> None:
     # Create a small dummy JSON dataset resembling the actual one
     dummy_json_path = tmp_path / "dummy_dataset.json"
     processed_dir = tmp_path / "processed"

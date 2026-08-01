@@ -5,7 +5,7 @@ from src.data.validator import DatasetValidator
 from tests.fixtures.data_fixtures import create_synthetic_dataset
 
 
-def test_validator_valid_dataset(tmp_path: Any) -> None:  # type: ignore
+def test_validator_valid_dataset(tmp_path: Any) -> None:
     f = tmp_path / "valid.json"
     create_synthetic_dataset(str(f), valid=True)
 
@@ -23,7 +23,7 @@ def test_validator_valid_dataset(tmp_path: Any) -> None:  # type: ignore
     assert stats["target_std"] == 0.5
 
 
-def test_validator_missing_fields(tmp_path: Any) -> None:  # type: ignore
+def test_validator_missing_fields(tmp_path: Any) -> None:
     f = tmp_path / "missing.json"
     create_synthetic_dataset(str(f), valid=False, missing_field=True)
 
@@ -36,7 +36,7 @@ def test_validator_missing_fields(tmp_path: Any) -> None:  # type: ignore
     assert stats["missing_fields"] == 1
 
 
-def test_validator_invalid_target(tmp_path: Any) -> None:  # type: ignore
+def test_validator_invalid_target(tmp_path: Any) -> None:
     f = tmp_path / "invalid_target.json"
     create_synthetic_dataset(str(f), valid=False, invalid_target=True)
 
@@ -49,7 +49,7 @@ def test_validator_invalid_target(tmp_path: Any) -> None:  # type: ignore
     assert stats["invalid_targets"] == 1
 
 
-def test_validator_nan_target(tmp_path: Any) -> None:  # type: ignore
+def test_validator_nan_target(tmp_path: Any) -> None:
     f = tmp_path / "nan_target.json"
     create_synthetic_dataset(str(f), valid=False, nan_target=True)
 
@@ -62,7 +62,7 @@ def test_validator_nan_target(tmp_path: Any) -> None:  # type: ignore
     assert stats["invalid_targets"] == 1
 
 
-def test_validator_malformed_structure(tmp_path: Any) -> None:  # type: ignore
+def test_validator_malformed_structure(tmp_path: Any) -> None:
     f = tmp_path / "malformed.json"
     create_synthetic_dataset(
         str(f), valid=False, missing_field=False, invalid_target=False, nan_target=False
@@ -77,7 +77,7 @@ def test_validator_malformed_structure(tmp_path: Any) -> None:  # type: ignore
     assert stats["malformed_structures"] == 1
 
 
-def test_validator_duplicates(tmp_path: Any) -> None:  # type: ignore
+def test_validator_duplicates(tmp_path: Any) -> None:
     f = tmp_path / "duplicates.json"
     create_synthetic_dataset(str(f), valid=True, add_duplicate=True)
 

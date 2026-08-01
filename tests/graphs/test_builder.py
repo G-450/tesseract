@@ -26,7 +26,7 @@ def builder() -> Any:
     return CrystalGraphBuilder(config)
 
 
-def test_builder_basic(builder, simple_cubic_structure) -> None:  # type: ignore
+def test_builder_basic(builder: Any, simple_cubic_structure: Any) -> None:
     data = builder.build(
         simple_cubic_structure, record_id=1, fingerprint="abc", target=-1.5
     )
@@ -48,7 +48,7 @@ def test_builder_basic(builder, simple_cubic_structure) -> None:  # type: ignore
     assert data.edge_image.shape == (num_edges, 3)
 
 
-def test_builder_self_loops_excluded(builder) -> None:  # type: ignore
+def test_builder_self_loops_excluded(builder: Any) -> None:
     # Create a very small cell where periodic self-interactions are possible
     lattice = Lattice.cubic(2.0)
     struct = Structure(lattice, ["H"], [[0.0, 0.0, 0.0]])
@@ -69,7 +69,7 @@ def test_builder_self_loops_excluded(builder) -> None:  # type: ignore
             assert image != (0, 0, 0)
 
 
-def test_builder_max_neighbors() -> None:  # type: ignore
+def test_builder_max_neighbors() -> None:
     config = GraphConfig(cutoff_radius=10.0, max_neighbors=4)
     builder = CrystalGraphBuilder(config)
 
@@ -84,7 +84,7 @@ def test_builder_max_neighbors() -> None:  # type: ignore
     assert data.edge_index.shape[1] == 4
 
 
-def test_builder_deterministic_ordering(builder, simple_cubic_structure) -> None:  # type: ignore
+def test_builder_deterministic_ordering(builder: Any, simple_cubic_structure: Any) -> None:
     data1 = builder.build(
         simple_cubic_structure, record_id=1, fingerprint="abc", target=-1.5
     )
