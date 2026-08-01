@@ -84,7 +84,9 @@ def test_builder_max_neighbors() -> None:
     assert data.edge_index.shape[1] == 4
 
 
-def test_builder_deterministic_ordering(builder: Any, simple_cubic_structure: Any) -> None:
+def test_builder_deterministic_ordering(
+    builder: Any, simple_cubic_structure: Any
+) -> None:
     data1 = builder.build(
         simple_cubic_structure, record_id=1, fingerprint="abc", target=-1.5
     )
