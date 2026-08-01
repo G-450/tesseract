@@ -5,6 +5,7 @@ import sys
 from src.config.dataset_config import load_dataset_config
 from src.data.cache import load_metadata, save_metadata
 from src.data.discovery import compute_fingerprint, discover_dataset
+from src.data.pipeline import GraphPipeline
 from src.data.validator import DatasetValidator
 
 logging.basicConfig(
@@ -79,6 +80,33 @@ def handle_info(args: argparse.Namespace) -> None:
     print(f"Target Std Dev: {stats.get('target_std')}")
 
 
+def handle_build_graphs(args: argparse.Namespace) -> None:
+    config = load_dataset_config(args.config)
+
+    try:
+        discover_dataset(config)
+    except Exception as e:
+        logger.error(f"Dataset not available: {e}")
+        sys.exit(1)
+
+    pipeline = GraphPipeline(config)
+
+    if args.smoke_test is not None:
+        logger.info(f"Running smoke test for {args.smoke_test} records...")
+
+    report = pipeline.process(max_records=args.smoke_test)
+
+    print("\n=== Graph Building Report ===")
+    print(f"Records processed: {report['total_records_processed']}")
+    print(f"Graphs created: {report['successful_graphs']}")
+    print(f"Graphs failed: {report['failed_graphs']}")
+    print(f"Shards created: {report['shards_created']}")
+    print(f"Processing time: {report['processing_time_seconds']:.2f} s")
+    if report["successful_graphs"] > 0:
+        print(f"Average nodes per graph: {report['average_nodes']:.2f}")
+        print(f"Average edges per graph: {report['average_edges']:.2f}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Dataset CLI commands")
     parser.add_argument(
@@ -99,6 +127,17 @@ def main() -> None:
         "info", help="Print dataset statistics from cache"
     )
     info_parser.set_defaults(func=handle_info)
+
+    build_parser = subparsers.add_parser(
+        "build-graphs", help="Build crystal graphs from the dataset"
+    )
+    build_parser.add_argument(
+        "--smoke-test",
+        type=int,
+        default=None,
+        help="Process only the first N records",
+    )
+    build_parser.set_defaults(func=handle_build_graphs)
 
     args = parser.parse_args()
     args.func(args)
