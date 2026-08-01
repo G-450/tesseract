@@ -1,0 +1,3 @@
+[submodule "scripts/dataset_viewer"]
+	path = scripts/dataset_viewer
+	url = https://github.com/mithulpranav24/mp_e_form-viewer.git

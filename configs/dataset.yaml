@@ -1,0 +1,9 @@
+dataset:
+  raw_data_path: "datasets/raw/mp_e_form.json"
+  metadata_dir: "datasets/metadata"
+  processed_data_dir: "datasets/processed"
+  
+  # Validation specific settings
+  require_structure: true
+  require_target: true
+  target_column: "e_form"
