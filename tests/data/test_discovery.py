@@ -1,5 +1,6 @@
-import pytest
 from typing import Any
+
+import pytest
 
 from src.config.dataset_config import DatasetConfig
 from src.data.discovery import compute_fingerprint, discover_dataset
