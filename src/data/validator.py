@@ -114,8 +114,8 @@ class DatasetValidator:
                     is_valid = False
 
                 if is_valid:
-                    import json
                     import hashlib
+                    import json
 
                     struct_json = json.dumps(
                         struct_data, sort_keys=True, separators=(",", ":")
