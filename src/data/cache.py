@@ -6,6 +6,8 @@ from typing import Any, Dict, Optional
 
 from src.config.dataset_config import DatasetConfig
 
+CACHE_SCHEMA_VERSION = 2
+
 
 def _get_metadata_path(config: DatasetConfig) -> str:
     return os.path.join(config.metadata_dir, "dataset_metadata.json")
@@ -30,6 +32,7 @@ def save_metadata(
     full_metadata = {
         "dataset_fingerprint": fingerprint,
         "generation_timestamp": datetime.now(timezone.utc).isoformat(),
+        "schema_version": CACHE_SCHEMA_VERSION,
         "stats": metadata,
     }
 
@@ -65,6 +68,8 @@ def load_metadata(config: DatasetConfig, fingerprint: str) -> Optional[Dict[str,
             full_metadata = json.load(f)
 
         if full_metadata.get("dataset_fingerprint") == fingerprint:
+            if full_metadata.get("schema_version") != CACHE_SCHEMA_VERSION:
+                return None
             stats = full_metadata.get("stats")
             if isinstance(stats, dict):
                 return stats

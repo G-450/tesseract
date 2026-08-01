@@ -22,7 +22,8 @@ def handle_validate(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     logger.info(
-        f"Discovered dataset at {discovery_info['path']} ({discovery_info['size_bytes']} bytes)"
+        f"Discovered dataset at {discovery_info['path']} "
+        f"({discovery_info['size_bytes']} bytes)"
     )
 
     logger.info("Computing fingerprint...")
@@ -42,6 +43,7 @@ def handle_validate(args: argparse.Namespace) -> None:
     print(f"Total records: {stats['total_records']}")
     print(f"Valid records: {stats['valid_records']}")
     print(f"Invalid records: {stats['invalid_records']}")
+    print(f"Duplicate representations: {stats['duplicate_representations']}")
     print(f"Malformed structures: {stats['malformed_structures']}")
     print(f"Invalid/NaN targets: {stats['invalid_targets']}")
     print(f"Missing fields: {stats['missing_fields']}")
@@ -61,7 +63,8 @@ def handle_info(args: argparse.Namespace) -> None:
 
     if not stats:
         logger.error(
-            "No valid cached metadata found for the current dataset. Please run 'dataset validate' first."
+            "No valid cached metadata found for the current dataset. "
+            "Please run 'dataset validate' first."
         )
         sys.exit(1)
 

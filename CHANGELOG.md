@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Welford's online algorithm for stable variance/std dev calculation.
+- Exact serialized representation duplicate detection.
+- PyMatGen compatibility gateway check (`verify_pymatgen.py`).
+- Formal decision document regarding `material_id` limitation (`05_DECISIONS.md`).
+
+### Fixed
+- `pytest` path resolution (`pythonpath = ["."]`).
+- `mypy` namespace collisions by adding `__init__.py` to `tests`.
+- `flake8` line length and spacing violations.
+- Decimal serialization issues in `ijson` by enabling `use_float=True`.
 
 ## [0.2.0] - 2026-08-01
 

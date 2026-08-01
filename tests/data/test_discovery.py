@@ -1,16 +1,17 @@
 import pytest
+from typing import Any
 
 from src.config.dataset_config import DatasetConfig
 from src.data.discovery import compute_fingerprint, discover_dataset
 
 
-def test_discover_dataset_missing():
+def test_discover_dataset_missing() -> None:
     config = DatasetConfig(raw_data_path="nonexistent.json")
     with pytest.raises(FileNotFoundError):
         discover_dataset(config)
 
 
-def test_discover_dataset_valid(tmp_path):
+def test_discover_dataset_success(tmp_path: Any) -> None:
     f = tmp_path / "dummy.json"
     f.write_text("{}")
 
@@ -21,7 +22,7 @@ def test_discover_dataset_valid(tmp_path):
     assert result["size_bytes"] == 2
 
 
-def test_compute_fingerprint(tmp_path):
+def test_compute_fingerprint(tmp_path: Any) -> None:
     f = tmp_path / "dummy.json"
     f.write_text("hello world")
 

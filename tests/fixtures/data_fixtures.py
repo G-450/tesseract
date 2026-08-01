@@ -2,8 +2,13 @@ import json
 
 
 def create_synthetic_dataset(
-    filepath, valid=True, missing_field=False, invalid_target=False, nan_target=False
-):
+    filepath: str,
+    valid: bool = True,
+    missing_field: bool = False,
+    invalid_target: bool = False,
+    nan_target: bool = False,
+    add_duplicate: bool = False,
+) -> None:
     """Creates a synthetic JSON matching the dataset schema."""
 
     struct_data = {
@@ -20,6 +25,8 @@ def create_synthetic_dataset(
     if valid:
         data.append([struct_data, 1.5])
         data.append([struct_data, 2.5])
+        if add_duplicate:
+            data.append([struct_data, 1.5])
 
     if missing_field:
         data.append([struct_data])  # missing target
@@ -41,7 +48,8 @@ def create_synthetic_dataset(
     }
 
     # We must write NaN as literal NaN if we want JSON to fail,
-    # but python json.dumps handles nan natively as NaN (which is technically invalid json, but parsers often handle it)
+    # but python json.dumps handles nan natively as NaN (which is
+    # technically invalid json, but parsers often handle it)
     # ijson might choke on unquoted NaN, so we might need to write it carefully.
     # Let's use simple dumps.
     with open(filepath, "w") as f:
