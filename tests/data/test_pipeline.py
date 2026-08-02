@@ -1,7 +1,7 @@
 import json
+from typing import Any
 
 import torch
-from typing import Any
 
 from src.config.dataset_config import DatasetConfig, GraphConfig
 from src.data.pipeline import GraphPipeline

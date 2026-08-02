@@ -1,5 +1,7 @@
-import ijson
 import pprint
+
+import ijson
+
 
 def analyze_json():
     with open(r'datasets/raw/mp_e_form.json', 'rb') as f:

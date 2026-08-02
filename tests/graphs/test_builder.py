@@ -1,4 +1,5 @@
 from typing import Any
+
 import pytest
 import torch
 from pymatgen.core.lattice import Lattice
