@@ -2,7 +2,7 @@ import subprocess
 import sys
 from typing import Any
 
-import yaml  # type: ignore
+import yaml
 
 from tests.fixtures.data_fixtures import create_synthetic_dataset
 

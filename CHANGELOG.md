@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- **Phase 3: Crystal Graph Construction and Serialization:** Fully audited, verified, and complete. 
+  - Integrated `ijson`-backed pipeline for bounded graph streaming logic.
+  - Implemented analytical `max_neighbors` cutoff with `pymatgen` bounded distances.
+  - Fixed mypy annotations and explicitly deferred scalar distance recording (F-001).
+  - Explicitly documented Graph Asymmetry via `max_neighbors` in `05_DECISIONS.md` (F-002).
+  - Audited mathematical periodic boundary condition mapping via analytical tests.
+  - Test suite running at 100% capacity via pytest/flake8/black/isort/mypy checks.
 - Welford's online algorithm for stable variance/std dev calculation.
 - Exact serialized representation duplicate detection.
 - PyMatGen compatibility gateway check (`verify_pymatgen.py`).
@@ -17,6 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mypy` namespace collisions by adding `__init__.py` to `tests`.
 - `flake8` line length and spacing violations.
 - Decimal serialization issues in `ijson` by enabling `use_float=True`.
+
+## [0.3.0] - Phase 3 Completion
+
+### Added
+- `dataset_config.py:GraphConfig` configuration class for graph cutoff, max neighbors, and RBF settings.
+- `src/graphs/features.py:GaussianDistance` module for PyTorch Geometric edge feature expansion.
+- `src/graphs/builder.py:CrystalGraphBuilder` module mapping structure distances into deterministic graphs.
+- `src/data/pipeline.py:GraphPipeline` orchestrator using `ijson` and sharded saving for constant-memory scaling.
+- `dataset_cli.py build-graphs` command, providing an easy entry point with `--smoke-test` capabilities.
+- Unit and integration tests for features, builder, and pipeline ensuring processing reliability.
 
 ## [0.2.0] - 2026-08-01
 

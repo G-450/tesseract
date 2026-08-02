@@ -7,3 +7,12 @@ dataset:
   require_structure: true
   require_target: true
   target_column: "e_form"
+
+  # Graph construction settings
+  graph:
+    cutoff_radius: 8.0
+    max_neighbors: 12
+    rbf_distance_min: 0.0
+    rbf_distance_max: 8.0
+    rbf_step_size: 0.2
+    shard_size: 1000
