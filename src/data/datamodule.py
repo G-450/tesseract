@@ -1,9 +1,9 @@
 import logging
 from typing import Optional
 
-import pytorch_lightning as pl
-from torch.utils.data import random_split
-from torch_geometric.loader import DataLoader
+import pytorch_lightning as pl  # type: ignore
+from torch.utils.data import Subset, random_split
+from torch_geometric.loader import DataLoader  # type: ignore
 
 from src.config.dataset_config import DatasetConfig
 from src.data.dataset import ShardedGraphDataset
@@ -18,9 +18,9 @@ class CrystalDataModule(pl.LightningDataModule):
         super().__init__()
         self.config = config
         self.dataset: Optional[ShardedGraphDataset] = None
-        self.train_dataset = None
-        self.val_dataset = None
-        self.test_dataset = None
+        self.train_dataset: Optional[Subset] = None
+        self.val_dataset: Optional[Subset] = None
+        self.test_dataset: Optional[Subset] = None
 
     def setup(self, stage: Optional[str] = None) -> None:
         if self.dataset is None:
@@ -44,13 +44,16 @@ class CrystalDataModule(pl.LightningDataModule):
 
             # We use a fixed generator for deterministic splits across runs
             import torch
+
             generator = torch.Generator().manual_seed(42)
-            
+
             self.train_dataset, self.val_dataset, self.test_dataset = random_split(
                 self.dataset, [train_len, val_len, test_len], generator=generator
             )
-            
-            logger.info(f"Dataset split: {train_len} train, {val_len} val, {test_len} test.")
+
+            logger.info(
+                f"Dataset split: {train_len} train, {val_len} val, {test_len} test."
+            )
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
