@@ -1,8 +1,9 @@
 import json
+from typing import Any
 
 import pytest
 import torch
-from torch_geometric.data import Data
+from torch_geometric.data import Data  # type: ignore
 
 from src.config.dataset_config import DataLoaderConfig, DatasetConfig
 from src.data.datamodule import CrystalDataModule
@@ -10,7 +11,7 @@ from src.data.dataset import ShardedGraphDataset
 
 
 @pytest.fixture
-def mock_processed_dir(tmp_path):
+def mock_processed_dir(tmp_path: Any) -> str:
     # Setup mock processed dir
     processed_dir = tmp_path / "processed"
     graphs_dir = processed_dir / "graphs"
@@ -40,7 +41,7 @@ def mock_processed_dir(tmp_path):
 
 
 @pytest.fixture
-def dataset_config(mock_processed_dir):
+def dataset_config(mock_processed_dir: str) -> DatasetConfig:
     config = DatasetConfig()
     config.processed_data_dir = mock_processed_dir
     config.dataloader = DataLoaderConfig(
@@ -49,7 +50,7 @@ def dataset_config(mock_processed_dir):
     return config
 
 
-def test_sharded_graph_dataset(dataset_config):
+def test_sharded_graph_dataset(dataset_config: DatasetConfig) -> None:
     dataset = ShardedGraphDataset(dataset_config)
 
     # Total graphs should be 2 from shard_00000 + 1 from shard_00001
@@ -64,7 +65,7 @@ def test_sharded_graph_dataset(dataset_config):
     assert data_2.x.shape == (2, 5)
 
 
-def test_crystal_datamodule(dataset_config):
+def test_crystal_datamodule(dataset_config: DatasetConfig) -> None:
     datamodule = CrystalDataModule(dataset_config)
     datamodule.setup()
 

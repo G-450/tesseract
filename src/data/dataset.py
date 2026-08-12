@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple
 
 import torch
 from torch.utils.data import Dataset
-from torch_geometric.data import Data
+from torch_geometric.data import Data  # type: ignore
 
 from src.config.dataset_config import DatasetConfig
 
@@ -81,7 +81,7 @@ class ShardedGraphDataset(Dataset):
     def _load_shard(self, shard_idx: int) -> List[Data]:
         """Loads a shard into memory. Cached for fast sequential/batched access."""
         shard_path = self.shard_files[shard_idx]
-        return torch.load(shard_path, weights_only=False)
+        return list(torch.load(shard_path, weights_only=False))
 
     def __getitem__(self, idx: int) -> Data:
         shard_idx, local_idx = self.global_to_shard[idx]
