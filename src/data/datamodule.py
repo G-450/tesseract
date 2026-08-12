@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-import pytorch_lightning as pl
+import pytorch_lightning as pl  # type: ignore
 from torch.utils.data import Subset, random_split
 from torch_geometric.loader import DataLoader  # type: ignore
 
