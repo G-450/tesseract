@@ -56,10 +56,16 @@ def load_dataset_config(config_path: str = "configs/dataset.yaml") -> DatasetCon
         # Parse graph config if present
         graph_data = dataset_data.pop("graph", None)
         graph_config = GraphConfig(**graph_data) if graph_data else GraphConfig()
-        
+
         # Parse dataloader config if present
         dataloader_data = dataset_data.pop("dataloader", None)
-        dataloader_config = DataLoaderConfig(**dataloader_data) if dataloader_data else DataLoaderConfig()
+        dataloader_config = (
+            DataLoaderConfig(**dataloader_data)
+            if dataloader_data
+            else DataLoaderConfig()
+        )
 
-        return DatasetConfig(**dataset_data, graph=graph_config, dataloader=dataloader_config)
+        return DatasetConfig(
+            **dataset_data, graph=graph_config, dataloader=dataloader_config
+        )
     return DatasetConfig()

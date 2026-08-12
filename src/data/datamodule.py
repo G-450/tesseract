@@ -44,13 +44,16 @@ class CrystalDataModule(pl.LightningDataModule):
 
             # We use a fixed generator for deterministic splits across runs
             import torch
+
             generator = torch.Generator().manual_seed(42)
-            
+
             self.train_dataset, self.val_dataset, self.test_dataset = random_split(
                 self.dataset, [train_len, val_len, test_len], generator=generator
             )
-            
-            logger.info(f"Dataset split: {train_len} train, {val_len} val, {test_len} test.")
+
+            logger.info(
+                f"Dataset split: {train_len} train, {val_len} val, {test_len} test."
+            )
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
