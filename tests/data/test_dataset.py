@@ -21,7 +21,7 @@ def mock_processed_dir(tmp_path: Any) -> str:
     manifest_data = {
         "fingerprint": "mock_fp",
         "total_records_processed": 10,
-        "successful_graphs": 10,
+        "successful_graphs": 3,
     }
     manifest_path = graphs_dir / "manifest.json"
     with open(manifest_path, "w") as f:
