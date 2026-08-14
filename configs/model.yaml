@@ -1,0 +1,12 @@
+model:
+  node_dim: 92  # Atom embeddings default dim, maybe 92 if one-hot up to U, typically 64 for CGCNN init
+  edge_dim: 41  # RBF distance expansions (from 0 to 8 with step 0.2 gives 41 features)
+  hidden_dim: 64
+  num_conv_layers: 3
+  pooling: "sum" # sum pooling as requested
+
+optimizer:
+  lr: 0.001
+  weight_decay: 0.0
+  lr_patience: 10
+  lr_factor: 0.5
