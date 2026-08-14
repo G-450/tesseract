@@ -15,6 +15,15 @@ class GraphConfig:
 
 
 @dataclass
+class DataLoaderConfig:
+    batch_size: int = 32
+    num_workers: int = 4
+    train_split: float = 0.8
+    val_split: float = 0.1
+    test_split: float = 0.1
+
+
+@dataclass
 class DatasetConfig:
     raw_data_path: str = "datasets/raw/mp_e_form.json"
     metadata_dir: str = "datasets/metadata"
@@ -23,6 +32,7 @@ class DatasetConfig:
     require_target: bool = True
     target_column: str = "e_form"
     graph: GraphConfig = field(default_factory=GraphConfig)
+    dataloader: DataLoaderConfig = field(default_factory=DataLoaderConfig)
 
 
 def load_dataset_config(config_path: str = "configs/dataset.yaml") -> DatasetConfig:
@@ -47,5 +57,15 @@ def load_dataset_config(config_path: str = "configs/dataset.yaml") -> DatasetCon
         graph_data = dataset_data.pop("graph", None)
         graph_config = GraphConfig(**graph_data) if graph_data else GraphConfig()
 
-        return DatasetConfig(**dataset_data, graph=graph_config)
+        # Parse dataloader config if present
+        dataloader_data = dataset_data.pop("dataloader", None)
+        dataloader_config = (
+            DataLoaderConfig(**dataloader_data)
+            if dataloader_data
+            else DataLoaderConfig()
+        )
+
+        return DatasetConfig(
+            **dataset_data, graph=graph_config, dataloader=dataloader_config
+        )
     return DatasetConfig()

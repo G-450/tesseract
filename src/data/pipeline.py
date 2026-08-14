@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import ijson  # type: ignore
 import torch
@@ -30,14 +30,18 @@ class GraphPipeline:
 
     def _save_shard(
         self, shard_data: List[Any], shard_idx: int, output_dir: str
-    ) -> str:
-        """Saves a shard to disk."""
+    ) -> Tuple[str, int]:
+        """Saves a shard to disk atomically.
+
+        Returns:
+            Tuple of (absolute shard path, number of graphs in the shard).
+        """
         shard_path = os.path.join(output_dir, f"shard_{shard_idx:05d}.pt")
         # Save atomically to prevent partial writes
         temp_path = shard_path + ".tmp"
         torch.save(shard_data, temp_path)
         os.rename(temp_path, shard_path)
-        return shard_path
+        return shard_path, len(shard_data)
 
     def process(self, max_records: Optional[int] = None) -> Dict[str, Any]:
         """
@@ -92,6 +96,10 @@ class GraphPipeline:
             "total_edges": 0,
         }
 
+        # Maps shard filename → number of graphs, so ShardedGraphDataset
+        # can build its index without loading any .pt files.
+        shard_lengths: Dict[str, int] = {}
+
         current_shard: List[Any] = []
         shard_idx = 0
 
@@ -133,7 +141,10 @@ class GraphPipeline:
                     report["total_edges"] += graph.num_edges
 
                     if len(current_shard) >= self.config.graph.shard_size:
-                        self._save_shard(current_shard, shard_idx, output_dir)
+                        shard_path, shard_len = self._save_shard(
+                            current_shard, shard_idx, output_dir
+                        )
+                        shard_lengths[os.path.basename(shard_path)] = shard_len
                         report["shards_created"] += 1
                         shard_idx += 1
                         current_shard = []
@@ -147,9 +158,13 @@ class GraphPipeline:
 
         # Save any remaining graphs in the last shard
         if current_shard:
-            self._save_shard(current_shard, shard_idx, output_dir)
+            shard_path, shard_len = self._save_shard(
+                current_shard, shard_idx, output_dir
+            )
+            shard_lengths[os.path.basename(shard_path)] = shard_len
             report["shards_created"] += 1
 
+        report["shard_lengths"] = shard_lengths
         report["end_time"] = time.time()
         report["processing_time_seconds"] = report["end_time"] - report["start_time"]
 

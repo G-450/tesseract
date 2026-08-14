@@ -16,3 +16,10 @@ dataset:
     rbf_distance_max: 8.0
     rbf_step_size: 0.2
     shard_size: 1000
+
+  dataloader:
+    batch_size: 32
+    num_workers: 4
+    train_split: 0.8
+    val_split: 0.1
+    test_split: 0.1
