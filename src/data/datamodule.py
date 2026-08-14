@@ -2,12 +2,28 @@ import logging
 from typing import Optional
 
 import pytorch_lightning as pl  # type: ignore
+from pytorch_lightning.callbacks import Callback  # type: ignore
 from torch_geometric.loader import DataLoader  # type: ignore
 
 from src.config.dataset_config import DatasetConfig
 from src.data.dataset import ShardedGraphDataset
 
 logger = logging.getLogger(__name__)
+
+
+class AdvanceEpochCallback(Callback):
+    """Callback to advance the epoch for IterableDatasets that need a seed.
+
+    Wired here to ensure the IterableDataset shuffling gets a new seed every
+    epoch, preventing the model from overfitting to a fixed shard permutation.
+    """
+
+    def on_train_epoch_start(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> None:
+        if hasattr(trainer, "datamodule") and trainer.datamodule is not None:
+            if getattr(trainer.datamodule, "train_dataset", None) is not None:
+                trainer.datamodule.train_dataset.set_epoch(trainer.current_epoch)
 
 
 class CrystalDataModule(pl.LightningDataModule):
@@ -17,7 +33,7 @@ class CrystalDataModule(pl.LightningDataModule):
     global random index permutation, so the DataLoader never needs to cross a
     shard boundary to serve a single batch.  Intra-shard shuffling is handled
     inside :class:`~src.data.dataset.ShardedGraphDataset` and advances its
-    seed each epoch via :meth:`on_train_epoch_start`.
+    seed each epoch via :class:`AdvanceEpochCallback`.
     """
 
     def __init__(self, config: DatasetConfig) -> None:
@@ -41,16 +57,6 @@ class CrystalDataModule(pl.LightningDataModule):
                 test_ratio=self.config.dataloader.test_split,
                 seed=42,
             )
-
-    def on_train_epoch_start(self) -> None:
-        """Advance the train dataset epoch so each epoch shuffles differently.
-
-        Wired here rather than in the model so the DataModule remains
-        self-contained.  The trainer exposes ``self.trainer.current_epoch``
-        which is available during this hook.
-        """
-        if self.train_dataset is not None and self.trainer is not None:
-            self.train_dataset.set_epoch(self.trainer.current_epoch)
 
     def train_dataloader(self) -> DataLoader:
         # shuffle=False: IterableDataset does not support the DataLoader
