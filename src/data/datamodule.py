@@ -62,6 +62,7 @@ class CrystalDataModule(pl.LightningDataModule):
             shuffle=True,
             num_workers=self.config.dataloader.num_workers,
             pin_memory=True,
+            persistent_workers=self.config.dataloader.num_workers > 0,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -71,6 +72,7 @@ class CrystalDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config.dataloader.num_workers,
             pin_memory=True,
+            persistent_workers=self.config.dataloader.num_workers > 0,
         )
 
     def test_dataloader(self) -> DataLoader:
@@ -80,4 +82,5 @@ class CrystalDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config.dataloader.num_workers,
             pin_memory=True,
+            persistent_workers=self.config.dataloader.num_workers > 0,
         )

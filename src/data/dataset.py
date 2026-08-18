@@ -1,97 +1,59 @@
-import json
 import logging
 import os
-from functools import lru_cache
-from typing import Any, Dict, List, Tuple
 
 import torch
-from torch.utils.data import Dataset
-from torch_geometric.data import Data  # type: ignore
+from torch_geometric.data import InMemoryDataset
 
 from src.config.dataset_config import DatasetConfig
 
 logger = logging.getLogger(__name__)
 
 
-class ShardedGraphDataset(Dataset):
-    """Dataset for loading sharded graph data."""
+class ShardedGraphDataset(InMemoryDataset):
+    """Dataset for loading sharded graph data into contiguous memory."""
 
     def __init__(self, config: DatasetConfig):
         self.config = config
-        self.processed_dir = os.path.join(self.config.processed_data_dir, "graphs")
-        self.manifest_path = os.path.join(self.processed_dir, "manifest.json")
+        self.graph_dir = os.path.join(self.config.processed_data_dir, "graphs")
+        self.manifest_path = os.path.join(self.graph_dir, "manifest.json")
+        self.compiled_path = os.path.join(self.graph_dir, "compiled_dataset.pt")
 
-        self.manifest: Dict[str, Any] = {}
-        self.shard_files: List[str] = []
-        self.shard_lengths: List[int] = []
-        self.total_graphs = 0
-        self.global_to_shard: List[Tuple[int, int]] = []
+        super().__init__(root=self.config.processed_data_dir)
 
-        self._load_manifest()
+        if not os.path.exists(self.compiled_path):
+            self._compile_shards()
 
-    def _load_manifest(self) -> None:
+        # Load the contiguous compiled dataset
+        logger.info("Loading compiled dataset into memory...")
+        self.data, self.slices = torch.load(self.compiled_path, weights_only=False)
+        logger.info(f"Loaded {len(self)} graphs efficiently into RAM.")
+
+    def _compile_shards(self) -> None:
+        """Collates all shards into a single contiguous InMemoryDataset."""
+        logger.info("Collating fragmented shards into a single memory-mapped tensor...")
         if not os.path.exists(self.manifest_path):
             raise FileNotFoundError(f"Manifest not found at {self.manifest_path}")
-
-        with open(self.manifest_path, "r", encoding="utf-8") as f:
-            self.manifest = json.load(f)
 
         shard_files = sorted(
             [
                 f
-                for f in os.listdir(self.processed_dir)
+                for f in os.listdir(self.graph_dir)
                 if f.startswith("shard_") and f.endswith(".pt")
             ]
         )
 
-        if not shard_files:
-            raise ValueError(f"No shard files found in {self.processed_dir}")
-
+        all_data_list = []
         for shard_file in shard_files:
-            shard_path = os.path.join(self.processed_dir, shard_file)
-            self.shard_files.append(shard_path)
-
-            # We load the shard just to get its length.
-            # In a very large dataset, the manifest should store the length
-            # of each shard to avoid this.
-            # Since the PRD indicates we are building a robust framework,
-            # we'll read it once to build the index.
+            shard_path = os.path.join(self.graph_dir, shard_file)
             try:
                 shard_data = torch.load(shard_path, weights_only=False)
-                length = len(shard_data)
-                self.shard_lengths.append(length)
-
-                shard_idx = len(self.shard_files) - 1
-                for local_idx in range(length):
-                    self.global_to_shard.append((shard_idx, local_idx))
-
+                all_data_list.extend(shard_data)
             except Exception as e:
-                logger.error(f"Failed to load shard {shard_path} for indexing: {e}")
-                raise
+                logger.error(f"Failed to load shard {shard_path}: {e}")
 
-        if self.manifest and len(self.global_to_shard) != self.manifest.get(
-            "successful_graphs"
-        ):
-            raise RuntimeError(
-                f"Found {len(self.global_to_shard)} graphs, "
-                f"expected {self.manifest['successful_graphs']}"
-            )
-
-        self.total_graphs = len(self.global_to_shard)
+        # Collate into single Data object with slices
+        data, slices = self.collate(all_data_list)
+        torch.save((data, slices), self.compiled_path)
         logger.info(
-            f"Loaded {self.total_graphs} graphs across {len(self.shard_files)} shards."
+            f"Successfully compiled {len(all_data_list)} graphs to {self.compiled_path}"
         )
-
-    def __len__(self) -> int:
-        return self.total_graphs
-
-    @lru_cache(maxsize=4)
-    def _load_shard(self, shard_idx: int) -> List[Data]:
-        """Loads a shard into memory. Cached for fast sequential/batched access."""
-        shard_path = self.shard_files[shard_idx]
-        return list(torch.load(shard_path, weights_only=False))
-
-    def __getitem__(self, idx: int) -> Data:
-        shard_idx, local_idx = self.global_to_shard[idx]
-        shard_data = self._load_shard(shard_idx)
-        return shard_data[local_idx]
