@@ -39,10 +39,10 @@ class CGCNNLightningModule(pl.LightningModule):
         out = out.view(-1)
 
         # Calculate loss (MSE for regression)
-        loss = F.mse_loss(out, batch.y)
+        loss = F.mse_loss(out, batch.y.float())
 
         # Calculate MAE for metric logging
-        mae = F.l1_loss(out, batch.y)
+        mae = F.l1_loss(out, batch.y.float())
 
         self.log(
             f"{step_name}_loss",

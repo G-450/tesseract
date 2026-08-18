@@ -22,7 +22,8 @@ class CGCNN(nn.Module):
         self.config = config
 
         # Initial atom embedding layer
-        self.embedding = nn.Linear(config.node_dim, config.hidden_dim)
+        # Atomic numbers can go up to ~118, use an embedding layer instead of Linear
+        self.embedding = nn.Embedding(118, config.hidden_dim)
 
         # Convolutional layers
         self.convs = nn.ModuleList(
@@ -65,6 +66,12 @@ class CGCNN(nn.Module):
         Returns:
             Tensor: Output scalar predictions [batch_size, 1]
         """
+        # Ensure correct dtypes
+        x = x.long()
+        if x.dim() > 1:
+            x = x.squeeze()
+        edge_attr = edge_attr.float()
+
         # Atom embedding
         v = self.embedding(x)
 
