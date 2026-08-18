@@ -36,7 +36,7 @@ class GraphPipeline:
         # Save atomically to prevent partial writes
         temp_path = shard_path + ".tmp"
         torch.save(shard_data, temp_path)
-        os.rename(temp_path, shard_path)
+        os.replace(temp_path, shard_path)
         return shard_path
 
     def process(self, max_records: Optional[int] = None) -> Dict[str, Any]:
