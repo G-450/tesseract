@@ -1,0 +1,21 @@
+{
+  "pythonVersion": "3.10",
+  "pythonPlatform": "Windows",
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": [
+    ".",
+    "src"
+  ],
+  "include": [
+    "src",
+    "tests"
+  ],
+  "exclude": [
+    ".venv",
+    "**/__pycache__"
+  ],
+  "reportMissingModuleSource": "warning",
+  "reportMissingImports": "error",
+  "typeCheckingMode": "basic"
+}

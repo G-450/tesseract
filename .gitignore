@@ -16,6 +16,7 @@ experiments/
 # Python Caches & Virtual Environments
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
 env/
