@@ -26,6 +26,7 @@ env/
 .idea/
 .vscode/
 *.swp
+pyrightconfig.json
 
 # Testing and Type checking
 .pytest_cache/

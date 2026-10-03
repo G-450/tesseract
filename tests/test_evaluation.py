@@ -179,6 +179,9 @@ def test_reporter_export(tmp_path: Any) -> None:
     assert "Performance Metrics" in summary_text
     assert "Benchmark Comparison" in summary_text
     assert "Error Distribution" in summary_text
+    assert "noqa" not in summary_text
+    assert "`**" not in summary_text
+    assert "**`" not in summary_text
 
 
 # ---------------------------------------------------------------------------
@@ -213,7 +216,7 @@ def test_plot_loss_curves(tmp_path: Any) -> None:
             "epoch": [0, 1, 2, 3],
             "train_loss": [0.5, 0.4, 0.3, 0.2],
             "val_loss": [0.55, 0.42, 0.35, 0.28],
-            "val_mae": [0.4, 0.35, 0.3, 0.25],
+            "val_MAE": [0.4, 0.35, 0.3, 0.25],
         }
     )
     df.to_csv(csv_file, index=False)

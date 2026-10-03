@@ -310,9 +310,15 @@ def plot_loss_curves(
     ax1.set_ylabel("Loss (MSE)", fontsize=11, fontweight="bold")
     ax1.grid(True, linestyle=":", alpha=0.6)
 
-    # Secondary axis for val_mae if present
-    if "val_mae" in grouped.columns and not grouped["val_mae"].isna().all():
-        mae_data = grouped["val_mae"].dropna()
+    # Secondary axis for val_MAE / val_mae if present
+    mae_col = None
+    if "val_MAE" in grouped.columns and not grouped["val_MAE"].isna().all():
+        mae_col = "val_MAE"
+    elif "val_mae" in grouped.columns and not grouped["val_mae"].isna().all():
+        mae_col = "val_mae"
+
+    if mae_col is not None:
+        mae_data = grouped[mae_col].dropna()
         ax2 = ax1.twinx()
         ax2.plot(
             np.asarray(mae_data.index),

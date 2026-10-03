@@ -178,6 +178,11 @@ class Reporter:
                 f"({pct_change:+.2f}%) reflects the current "
                 f"training budget, hyperparameter choices, and split partition."
             )
+        pred_table_header = (
+            "| Sample ID | True Value (eV/atom) | Predicted (eV/atom) | "
+            "Residual (eV/atom) | Abs Error (eV/atom) |\n"
+            "| :--- | :--- | :--- | :--- | :--- |"
+        )
 
         markdown_content = f"""# CGCNN Model Evaluation Summary
 
@@ -195,7 +200,7 @@ class Reporter:
 | **MAE** | **{mae:.4f}** | eV/atom | Mean Absolute Error (primary benchmark) |
 | **RMSE** | **{rmse:.4f}** | eV/atom | Root Mean Square Error |
 | **R²** | **{r2:.4f}** | - | Coefficient of Determination |
-| **Mean Bias** | **{bias:+.4f}** | eV/atom | Mean signed prediction error ($\\hat{{y}} - y$) |  # noqa: E501
+| **Mean Bias** | **{bias:+.4f}** | eV/atom | Mean signed prediction error ($\\hat{{y}} - y$) |
 
 ---
 
@@ -203,8 +208,8 @@ class Reporter:
 
 | Model / Benchmark | MAE (eV/atom) | Difference (eV/atom) | Relative (%) |
 | :--- | :--- | :--- | :--- |
-| **Published CGCNN Baseline** | `{self.baseline_mae:.4f}` | - | - |
-| **Current Model (Test Set)** | `**{mae:.4f}**` | `{mae_diff:+.4f}` | `{pct_change:+.2f}%` |  # noqa: E501
+| **Published CGCNN Baseline** | {self.baseline_mae:.4f} | - | - |
+| **Current Model (Test Set)** | **{mae:.4f}** | {mae_diff:+.4f} | {pct_change:+.2f}% |
 
 ### Discussion
 {comparison_discussion}
@@ -222,13 +227,11 @@ class Reporter:
 | **Maximum Absolute Error** | {max_ae:.4f} |
 
 ### Top {top_k} Best Predictions (Lowest Absolute Error)
-| Sample ID | True Value (eV/atom) | Predicted (eV/atom) | Residual (eV/atom) | Abs Error (eV/atom) |  # noqa: E501
-| :--- | :--- | :--- | :--- | :--- |
+{pred_table_header}
 {chr(10).join(best_rows)}
 
 ### Top {top_k} Worst Predictions (Highest Absolute Error)
-| Sample ID | True Value (eV/atom) | Predicted (eV/atom) | Residual (eV/atom) | Abs Error (eV/atom) |  # noqa: E501
-| :--- | :--- | :--- | :--- | :--- |
+{pred_table_header}
 {chr(10).join(worst_rows)}
 
 ---
