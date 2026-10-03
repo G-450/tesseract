@@ -20,13 +20,25 @@ class ShardedGraphDataset(InMemoryDataset):
 
         super().__init__(root=self.config.processed_data_dir)
 
-        if not os.path.exists(self.compiled_path):
+        if self._compiled_is_stale():
             self._compile_shards()
 
         # Load the contiguous compiled dataset
         logger.info("Loading compiled dataset into memory...")
         self.data, self.slices = torch.load(self.compiled_path, weights_only=False)
         logger.info(f"Loaded {len(self)} graphs efficiently into RAM.")
+
+    def _compiled_is_stale(self) -> bool:
+        """The pipeline rewrites the manifest on every run, so a compiled
+        dataset older than the manifest was built from outdated shards."""
+        if not os.path.exists(self.compiled_path):
+            return True
+        if os.path.exists(self.manifest_path) and os.path.getmtime(
+            self.manifest_path
+        ) > os.path.getmtime(self.compiled_path):
+            logger.info("Manifest is newer than compiled dataset; recompiling.")
+            return True
+        return False
 
     def _compile_shards(self) -> None:
         """Collates all shards into a single contiguous InMemoryDataset."""
@@ -50,6 +62,7 @@ class ShardedGraphDataset(InMemoryDataset):
                 all_data_list.extend(shard_data)
             except Exception as e:
                 logger.error(f"Failed to load shard {shard_path}: {e}")
+                raise
 
         # Collate into single Data object with slices
         data, slices = self.collate(all_data_list)

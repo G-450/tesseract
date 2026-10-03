@@ -77,6 +77,10 @@ def test_pipeline_processing(tmp_path: Any) -> None:
         manifest = json.load(f)
         assert manifest["successful_graphs"] == 2
         assert len(manifest["failure_details"]) == 1
+        # shard_lengths must map each shard filename to its graph count
+        assert "shard_lengths" in manifest
+        assert manifest["shard_lengths"]["shard_00000.pt"] == 1
+        assert manifest["shard_lengths"]["shard_00001.pt"] == 1
 
     # Check shard files
     shard_0 = graphs_dir / "shard_00000.pt"
