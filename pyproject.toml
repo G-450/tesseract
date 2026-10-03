@@ -29,6 +29,7 @@ dev = [
     "isort>=5.13.2",
     "mypy>=1.8.0",
     "flake8>=7.0.0",
+    "pandas-stubs>=2.1.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -63,6 +64,12 @@ module = [
     "matminer",
     "matminer.*",
     "ijson",
+    "pandas",
+    "pandas.*",
+    "scipy",
+    "scipy.*",
+    "matplotlib",
+    "matplotlib.*",
 ]
 ignore_missing_imports = true
 
