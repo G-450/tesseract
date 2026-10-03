@@ -40,7 +40,7 @@ class GraphPipeline:
         # Save atomically to prevent partial writes
         temp_path = shard_path + ".tmp"
         torch.save(shard_data, temp_path)
-        os.rename(temp_path, shard_path)
+        os.replace(temp_path, shard_path)
         return shard_path, len(shard_data)
 
     def process(self, max_records: Optional[int] = None) -> Dict[str, Any]:
@@ -96,8 +96,7 @@ class GraphPipeline:
             "total_edges": 0,
         }
 
-        # Maps shard filename → number of graphs, so ShardedGraphDataset
-        # can build its index without loading any .pt files.
+        # Maps shard filename → number of graphs, recorded in the manifest.
         shard_lengths: Dict[str, int] = {}
 
         current_shard: List[Any] = []

@@ -5,6 +5,14 @@ import torch
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torchmetrics import MetricCollection
+from torchmetrics.regression import (
+    MeanAbsoluteError,
+    MeanAbsolutePercentageError,
+    MeanSquaredError,
+    PearsonCorrCoef,
+    R2Score,
+)
 
 from src.config.model_config import CGCNNConfig
 from src.models.cgcnn import CGCNN
@@ -21,6 +29,20 @@ class CGCNNLightningModule(pl.LightningModule):
         self.config = config
         self.model = CGCNN(config.model)
 
+        metrics = MetricCollection(
+            {
+                "MSE": MeanSquaredError(),
+                "RMSE": MeanSquaredError(squared=False),
+                "MAE": MeanAbsoluteError(),
+                "R2": R2Score(),
+                "MAPE": MeanAbsolutePercentageError(),
+                "Pearson": PearsonCorrCoef(),
+            }
+        )
+        self.train_metrics = metrics.clone(prefix="train_")
+        self.val_metrics = metrics.clone(prefix="val_")
+        self.test_metrics = metrics.clone(prefix="test_")
+
     def forward(
         self,
         x: torch.Tensor,
@@ -35,25 +57,31 @@ class CGCNNLightningModule(pl.LightningModule):
         Shared forward pass and loss calculation.
         """
         out = self(batch.x, batch.edge_index, batch.edge_attr, batch.batch)
-        # Squeeze output to match target shape
         out = out.view(-1)
+        target = batch.y.float()
 
         # Calculate loss (MSE for regression)
-        loss = F.mse_loss(out, batch.y)
+        loss = F.mse_loss(out, target)
 
-        # Calculate MAE for metric logging
-        mae = F.l1_loss(out, batch.y)
+        if step_name == "train":
+            metrics = self.train_metrics(out, target)
+        elif step_name == "val":
+            metrics = self.val_metrics(out, target)
+        else:
+            metrics = self.test_metrics(out, target)
 
-        self.log(
-            f"{step_name}_loss",
-            loss,
+        self.log_dict(
+            metrics,
             batch_size=batch.num_graphs,
             prog_bar=True,
             sync_dist=True,
+            on_step=False,
+            on_epoch=True,
         )
+        # Also log the primary loss directly for the progress bar at each step
         self.log(
-            f"{step_name}_mae",
-            mae,
+            f"{step_name}_loss",
+            loss,
             batch_size=batch.num_graphs,
             prog_bar=True,
             sync_dist=True,
