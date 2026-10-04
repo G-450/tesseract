@@ -183,6 +183,10 @@ class Reporter:
             "Residual (eV/atom) | Abs Error (eV/atom) |\n"
             "| :--- | :--- | :--- | :--- | :--- |"
         )
+        mean_bias_row = (
+            f"| **Mean Bias** | **{bias:+.4f}** | eV/atom | "
+            f"Mean signed prediction error ($\\hat{{y}} - y$) |"
+        )
 
         markdown_content = f"""# CGCNN Model Evaluation Summary
 
@@ -200,7 +204,7 @@ class Reporter:
 | **MAE** | **{mae:.4f}** | eV/atom | Mean Absolute Error (primary benchmark) |
 | **RMSE** | **{rmse:.4f}** | eV/atom | Root Mean Square Error |
 | **R²** | **{r2:.4f}** | - | Coefficient of Determination |
-| **Mean Bias** | **{bias:+.4f}** | eV/atom | Mean signed prediction error ($\\hat{{y}} - y$) |
+{mean_bias_row}
 
 ---
 
