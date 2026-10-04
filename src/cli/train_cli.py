@@ -5,6 +5,7 @@ CLI script to train the CGCNN model.
 import argparse
 import logging
 import os
+import shutil
 
 import pytorch_lightning as pl
 import torch
@@ -66,11 +67,19 @@ def main() -> None:
         default=None,
         help="Path to a checkpoint (.ckpt) to resume training from",
     )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=None,
+        help="Override dataloader.num_workers from the dataset config",
+    )
     args = parser.parse_args()
 
     # Load configurations
     dataset_config = load_dataset_config(args.dataset_config)
     model_config = load_cgcnn_config(args.model_config)
+    if args.num_workers is not None:
+        dataset_config.dataloader.num_workers = args.num_workers
 
     # Instantiate DataModule and Model
     datamodule = CrystalDataModule(config=dataset_config)
@@ -113,6 +122,13 @@ def main() -> None:
     logger.info("Starting training...")
     trainer.fit(model, datamodule, ckpt_path=args.resume)
     logger.info("Training complete.")
+
+    # Copy the best checkpoint to a stable path for evaluation
+    best_path = checkpoint_callback.best_model_path
+    if best_path:
+        best_copy = os.path.join(checkpoint_callback.dirpath or "", "best.ckpt")
+        shutil.copyfile(best_path, best_copy)
+        logger.info(f"Best checkpoint ({best_path}) copied to {best_copy}")
 
 
 if __name__ == "__main__":
