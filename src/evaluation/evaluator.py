@@ -55,6 +55,7 @@ class Evaluator:
         dataset_config_path: str = "configs/dataset.yaml",
         model_config_path: str = "configs/model.yaml",
         device: Optional[str] = None,
+        num_workers: Optional[int] = None,
     ) -> None:
         """Initializes the Evaluator with checkpoint and configuration paths.
 
@@ -64,6 +65,8 @@ class Evaluator:
             model_config_path: Path to model YAML configuration.
             device: Optional compute device ('cpu', 'cuda', etc.). If None,
                 defaults to 'cuda' if available else 'cpu'.
+            num_workers: Optional override for the dataset config's
+                dataloader.num_workers.
         """
         self.checkpoint_path = checkpoint_path
         self.dataset_config_path = dataset_config_path
@@ -71,6 +74,8 @@ class Evaluator:
 
         self.dataset_config: DatasetConfig = load_dataset_config(dataset_config_path)
         self.model_config: CGCNNConfig = load_cgcnn_config(model_config_path)
+        if num_workers is not None:
+            self.dataset_config.dataloader.num_workers = num_workers
 
         if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

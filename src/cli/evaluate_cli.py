@@ -57,6 +57,12 @@ def main() -> None:
         default=None,
         help="Explicit compute device ('cpu', 'cuda', etc.)",
     )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=None,
+        help="Override dataloader.num_workers from the dataset config",
+    )
 
     args = parser.parse_args()
 
@@ -74,6 +80,7 @@ def main() -> None:
         dataset_config_path=args.dataset_config,
         model_config_path=args.model_config,
         device=args.device,
+        num_workers=args.num_workers,
     )
 
     logger.info("Executing evaluation pipeline...")
