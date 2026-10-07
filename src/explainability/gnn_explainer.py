@@ -37,6 +37,10 @@ except ImportError:
 class GNNExplainerWrapper(BaseExplainer):
     """Explains CGCNN predictions using PyG's GNNExplainer.
 
+    Note: Single-atom structures are skipped because the underlying CGCNN
+    model's forward pass reduces a [1, 1] input to a scalar, which breaks
+    the explainer. These are logged and return None.
+
     If GNNExplainer is not available in the installed PyG version, the
     ``is_supported`` attribute is set to ``False`` and calls to :meth:`explain`
     return ``None`` with a warning, allowing the rest of the pipeline to continue
@@ -115,6 +119,13 @@ class GNNExplainerWrapper(BaseExplainer):
         """
         if not self.is_supported:
             logger.warning(f"GNNExplainer is disabled. Skipping sample '{sample_id}'.")
+            return None
+
+        if graph.num_nodes == 1:
+            logger.warning(
+                f"Skipping graph {sample_id}: GNNExplainer cannot explain single-atom "
+                f"crystals because CGCNN.forward reduces [1, 1] input to a scalar."
+            )
             return None
 
         try:

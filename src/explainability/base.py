@@ -51,7 +51,9 @@ class ExplanationResult:
         edge_imp = self.edge_importance.float()
 
         def _safe_abs_argmax(t: torch.Tensor) -> int:
-            return int(t.abs().argmax().item()) if t.numel() > 0 else -1
+            if t.numel() == 0 or t.abs().max() == 0:
+                return -1
+            return int(t.abs().argmax().item())
 
         def _safe_scalar(t: torch.Tensor, fn: str) -> float:
             if t.numel() == 0:

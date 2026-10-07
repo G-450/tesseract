@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/explainability/base.py`: `BaseExplainer` ABC with `explain()`, `explain_batch()`, `visualize()`, `export()` abstract methods; `ExplanationResult` dataclass with auto-computed `summary_statistics` (top node/edge idx, scores, mean, std, prediction error).
   - `src/explainability/exceptions.py`: `ExplainabilityError` hierarchy — `ExplainerInitializationError`, `SampleExplanationError`, `ExportError` — integrated with project exception system (PRD §123).
   - `src/explainability/integrated_gradients.py`: `IntegratedGradientsExplainer` using Captum. Hooks after `nn.Embedding` to operate on continuous space. Attributes both node embeddings and edge features simultaneously.
-  - `src/explainability/gnn_explainer.py`: `GNNExplainerWrapper` with graceful fallback when `torch_geometric.explain` is unavailable (PRD §85, §88).
+  - `src/explainability/gnn_explainer.py`: `GNNExplainerWrapper` with graceful fallback when `torch_geometric.explain` is unavailable (PRD §85, §88). Skips single-atom structures due to model input dimensions.
   - `src/explainability/exporter.py`: `Exporter` producing per-material `explanation.json` + `heatmap.png` under `<output_dir>/<sample_id>/` plus aggregated `summary.csv` (PRD §87).
   - `src/explainability/__init__.py`: Full public API with `__all__`.
   - `src/cli/explain_cli.py`: `explain_cli.py` entry point with `--checkpoint`, `--method`, `--num-samples`, `--output-dir`, `--device`, `--num-workers` flags (PRD §121).

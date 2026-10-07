@@ -45,9 +45,6 @@ class Exporter:
         result: ExplanationResult, output_path: Optional[str] = None
     ) -> Optional[str]:
         """Generate a heatmap figure for node and edge importances."""
-        import matplotlib
-
-        matplotlib.use("Agg")
         import matplotlib.pyplot as plt  # noqa: PLC0415
 
         fig, axes = plt.subplots(1, 2, figsize=(12, 5))
@@ -93,9 +90,11 @@ class Exporter:
         else:
             sid_str = str(sample_id)
 
-        # Remove any path separators and dots
-        clean_id = sid_str.replace("/", "").replace("\\", "").replace(".", "")
-        return clean_id if clean_id else "unknown"
+        # Replace path separators and reject dangerous traversal names
+        clean_id = sid_str.replace("/", "_").replace("\\", "_")
+        if clean_id in ("", ".", ".."):
+            return "unknown"
+        return clean_id
 
     @staticmethod
     def export_single(result: ExplanationResult, output_dir: str) -> dict[str, str]:

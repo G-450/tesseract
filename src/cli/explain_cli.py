@@ -19,6 +19,7 @@ Note:
 
 import argparse
 import logging
+import matplotlib
 import os
 import sys
 from typing import List
@@ -31,6 +32,7 @@ from src.explainability.exporter import Exporter
 from src.explainability.gnn_explainer import GNNExplainerWrapper
 from src.explainability.integrated_gradients import IntegratedGradientsExplainer
 
+matplotlib.use("Agg")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
