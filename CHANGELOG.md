@@ -14,8 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/explainability/gnn_explainer.py`: `GNNExplainerWrapper` with graceful fallback when `torch_geometric.explain` is unavailable (PRD §85, §88). Skips single-atom structures due to model input dimensions.
   - `src/explainability/exporter.py`: `Exporter` producing per-material `explanation.json` + `heatmap.png` under `<output_dir>/<sample_id>/` plus aggregated `summary.csv` (PRD §87).
   - `src/explainability/__init__.py`: Full public API with `__all__`.
-  - `src/cli/explain_cli.py`: `explain_cli.py` entry point with `--checkpoint`, `--method`, `--num-samples`, `--output-dir`, `--device`, `--num-workers` flags (PRD §121).
-  - `tests/test_explainability.py`: 17 unit and integration tests covering ABC enforcement, summary statistics, IG shapes, batch skip logic, visualize/export artifacts, exception attributes, Exporter directory structure.
+  - `src/cli/explain_cli.py`: `explain_cli.py` entry point with `--checkpoint`, `--method`, `--num-samples`, `--output-dir`, `--device`, `--num-workers`, `--seed` flags (PRD §121).
+  - GNNExplainer outputs are reproducible: the `--seed` (default 42) is re-applied per sample inside a forked RNG and recorded in each result's metadata. Bit-identical on CPU; float-level (~1e-7) noise only on CUDA.
+  - `tests/test_explainability.py`: 20 unit and integration tests covering ABC enforcement, summary statistics, IG shapes, batch skip logic, visualize/export artifacts, exception attributes, Exporter directory structure.
   - `captum>=0.7.0` added to runtime dependencies.
 
 - **Phase 3: Crystal Graph Construction and Serialization:** Fully audited, verified, and complete. 

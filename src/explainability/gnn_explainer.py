@@ -51,12 +51,18 @@ class GNNExplainerWrapper(BaseExplainer):
         evidence (PRD §82, §101).
     """
 
-    def __init__(self, model: nn.Module) -> None:
+    def __init__(self, model: nn.Module, seed: int = 42) -> None:
         """Initialize the GNNExplainerWrapper.
 
         Args:
             model: A trained CGCNN ``CGCNNLightningModule``. The model is
                 immediately frozen to prevent accidental weight modification.
+            seed: Random seed applied before each sample's mask optimisation.
+                GNNExplainer initialises its masks randomly, so the seed is
+                re-applied per sample to make results reproducible and
+                independent of sample order. Results are bit-identical on
+                CPU; on CUDA, non-deterministic scatter kernels can add
+                float-level noise (~1e-7) but rankings are unaffected.
 
         Raises:
             ExplainerInitializationError: Logged as a warning only; the
@@ -68,6 +74,7 @@ class GNNExplainerWrapper(BaseExplainer):
         for param in self.model.parameters():
             param.requires_grad = False
 
+        self.seed = seed
         self.is_supported: bool = False
 
         if not _HAS_GNN_EXPLAINER:
@@ -142,12 +149,17 @@ class GNNExplainerWrapper(BaseExplainer):
                     graph.x.view(-1, 1), graph.edge_index, graph.edge_attr, graph.batch
                 )
 
-            explanation = self._explainer(
-                graph.x.view(-1, 1),
-                graph.edge_index,
-                edge_attr=graph.edge_attr,
-                batch=graph.batch,
-            )
+            # Seed inside a forked RNG so mask initialisation is reproducible
+            # without altering the caller's global random state.
+            rng_devices = [graph.x.device] if graph.x.is_cuda else []
+            with torch.random.fork_rng(devices=rng_devices):
+                torch.manual_seed(self.seed)
+                explanation = self._explainer(
+                    graph.x.view(-1, 1),
+                    graph.edge_index,
+                    edge_attr=graph.edge_attr,
+                    batch=graph.batch,
+                )
 
             if hasattr(explanation, "node_mask") and explanation.node_mask is not None:
                 node_importance = explanation.node_mask.sum(dim=-1).detach()
@@ -171,6 +183,7 @@ class GNNExplainerWrapper(BaseExplainer):
                 metadata={
                     "method": "gnn_explainer",
                     "epochs": 50,
+                    "seed": self.seed,
                     "note": (
                         "node_mask_type=None, node importance is intentionally zero."
                     ),

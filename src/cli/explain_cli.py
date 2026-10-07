@@ -97,6 +97,15 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Compute device override ('cpu', 'cuda', etc.).",
     )
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help=(
+            "Random seed for stochastic explainers (GNNExplainer mask "
+            "initialisation) so outputs are reproducible (default: 42)."
+        ),
+    )
+    parser.add_argument(
         "--num-workers",
         type=int,
         default=None,
@@ -157,7 +166,7 @@ def main() -> None:
     if args.method == "integrated_gradients":
         explainer = IntegratedGradientsExplainer(model)
     else:
-        explainer = GNNExplainerWrapper(model)
+        explainer = GNNExplainerWrapper(model, seed=args.seed)
 
     results = explainer.explain_batch(graphs)
 

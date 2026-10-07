@@ -299,6 +299,40 @@ def test_gnn_explainer_batch_returns_list() -> None:
         assert results[0].metadata["method"] == "gnn_explainer"
 
 
+def test_gnn_explainer_is_reproducible() -> None:
+    """Same seed must give identical masks regardless of global RNG state."""
+    model = _make_model()
+    wrapper = GNNExplainerWrapper(model, seed=7)
+    if not wrapper.is_supported:
+        pytest.skip("torch_geometric.explain not available")
+
+    graph = _make_graph()
+    torch.manual_seed(1)
+    first = wrapper.explain(graph, sample_id="a")
+    # A different global RNG state (e.g. another run, or other samples
+    # explained first) must not change the result.
+    torch.manual_seed(2)
+    again = wrapper.explain(graph, sample_id="a")
+
+    assert first is not None and again is not None
+    assert torch.equal(first.edge_importance, again.edge_importance)
+    assert first.metadata["seed"] == 7
+
+
+def test_gnn_explainer_does_not_alter_global_rng() -> None:
+    """Seeding must not change the caller's global random state."""
+    wrapper = GNNExplainerWrapper(_make_model())
+    if not wrapper.is_supported:
+        pytest.skip("torch_geometric.explain not available")
+
+    graph = _make_graph()  # built first: it draws from the global RNG itself
+    torch.manual_seed(123)
+    expected = torch.rand(3)
+    torch.manual_seed(123)
+    wrapper.explain(graph, sample_id="rng")
+    assert torch.equal(torch.rand(3), expected)
+
+
 # ---------------------------------------------------------------------------
 # Exporter
 # ---------------------------------------------------------------------------
