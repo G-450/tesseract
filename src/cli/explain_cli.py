@@ -19,11 +19,11 @@ Note:
 
 import argparse
 import logging
-import matplotlib
 import os
 import sys
 from typing import List
 
+import matplotlib
 from torch_geometric.data import Data
 
 from src.evaluation.evaluator import Evaluator
