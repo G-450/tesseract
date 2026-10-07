@@ -271,6 +271,20 @@ def test_gnn_explainer_wrapper_graceful_fallback(monkeypatch: Any) -> None:
     assert results == []
 
 
+def test_all_zero_node_importance() -> None:
+    """If node importance is all zeroes, top_node_idx should be -1."""
+    res = ExplanationResult(
+        sample_id=1,
+        prediction=0.5,
+        target=0.5,
+        node_importance=torch.zeros(5),
+        edge_importance=torch.zeros(10),
+        edge_index=torch.zeros((2, 10), dtype=torch.long),
+    )
+    assert res.summary_statistics["top_node_idx"] == -1
+    assert res.summary_statistics["top_node_score"] == 0.0
+
+
 def test_gnn_explainer_batch_returns_list() -> None:
     """explain_batch must return a list regardless of support status."""
     model = _make_model()
@@ -279,6 +293,10 @@ def test_gnn_explainer_batch_returns_list() -> None:
 
     results = wrapper.explain_batch([graph])
     assert isinstance(results, list)
+    if wrapper.is_supported:
+        assert len(results) == 1
+        assert results[0].edge_importance.shape == (graph.num_edges,)
+        assert results[0].metadata["method"] == "gnn_explainer"
 
 
 # ---------------------------------------------------------------------------
