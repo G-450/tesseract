@@ -128,11 +128,11 @@ class GNNExplainerWrapper(BaseExplainer):
 
             with torch.no_grad():
                 pred = self.model(
-                    graph.x, graph.edge_index, graph.edge_attr, graph.batch
+                    graph.x.view(-1, 1), graph.edge_index, graph.edge_attr, graph.batch
                 )
 
             explanation = self._explainer(
-                graph.x,
+                graph.x.view(-1, 1),
                 graph.edge_index,
                 edge_attr=graph.edge_attr,
                 batch=graph.batch,
@@ -200,9 +200,25 @@ class GNNExplainerWrapper(BaseExplainer):
         result: ExplanationResult,
         output_path: Optional[str] = None,
     ) -> Optional[str]:
-        """Generate a heatmap figure for node and edge importances."""
+        """Generate a heatmap figure for node and edge importances.
+
+        Args:
+            result: The explanation result to visualize.
+            output_path: Optional path to save the heatmap.
+
+        Returns:
+            The path to the saved heatmap if output_path is provided, else None.
+        """
         return Exporter.visualize(result, output_path)
 
     def export(self, result: ExplanationResult, output_dir: str) -> Dict[str, str]:
-        """Export JSON data and PNG heatmap for a single explanation."""
+        """Export JSON data and PNG heatmap for a single explanation.
+
+        Args:
+            result: The explanation result to export.
+            output_dir: The directory to save the exported files.
+
+        Returns:
+            A dictionary mapping file descriptions to their saved paths.
+        """
         return Exporter.export_single(result, output_dir)

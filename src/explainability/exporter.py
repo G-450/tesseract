@@ -11,7 +11,10 @@ import csv
 import json
 import logging
 import os
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional, Union
+
+if TYPE_CHECKING:
+    import torch
 
 from src.explainability.base import ExplanationResult
 from src.explainability.exceptions import ExportError
@@ -42,6 +45,9 @@ class Exporter:
         result: ExplanationResult, output_path: Optional[str] = None
     ) -> Optional[str]:
         """Generate a heatmap figure for node and edge importances."""
+        import matplotlib
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt  # noqa: PLC0415
 
         fig, axes = plt.subplots(1, 2, figsize=(12, 5))
@@ -52,19 +58,19 @@ class Exporter:
             fontsize=10,
         )
 
-        node_data = result.node_importance.cpu().numpy().reshape(1, -1)
+        node_data = abs(result.node_importance.cpu().numpy().reshape(1, -1))
         im0 = axes[0].imshow(node_data, aspect="auto", cmap="Reds")
         axes[0].set_title("Node (Atom) Importance")
         axes[0].set_xlabel("Atom Index")
         axes[0].set_yticks([])
-        fig.colorbar(im0, ax=axes[0], label="Attribution Score")
+        fig.colorbar(im0, ax=axes[0], label="Attribution Magnitude")
 
-        edge_data = result.edge_importance.cpu().numpy().reshape(1, -1)
+        edge_data = abs(result.edge_importance.cpu().numpy().reshape(1, -1))
         im1 = axes[1].imshow(edge_data, aspect="auto", cmap="Reds")
         axes[1].set_title("Edge (Bond) Importance")
         axes[1].set_xlabel("Edge Index")
         axes[1].set_yticks([])
-        fig.colorbar(im1, ax=axes[1], label="Attribution Score")
+        fig.colorbar(im1, ax=axes[1], label="Attribution Magnitude")
 
         plt.tight_layout()
 
@@ -78,15 +84,32 @@ class Exporter:
         return None
 
     @staticmethod
-    def export_single(result: ExplanationResult, output_dir: str) -> dict[str, str]:
-        """Export JSON and PNG for a single result."""
+    def _clean_sample_id(sample_id: Union[int, str, "torch.Tensor"]) -> str:
+        """Sanitize sample ID to prevent path traversal."""
         import torch
 
+        if isinstance(sample_id, torch.Tensor):
+            sid_str = str(sample_id.item())
+        else:
+            sid_str = str(sample_id)
+
+        # Remove any path separators and dots
+        clean_id = sid_str.replace("/", "").replace("\\", "").replace(".", "")
+        return clean_id if clean_id else "unknown"
+
+    @staticmethod
+    def export_single(result: ExplanationResult, output_dir: str) -> dict[str, str]:
+        """Export JSON and PNG for a single result.
+
+        Args:
+            result: The explanation result to export.
+            output_dir: The base directory where the sample folder will be created.
+
+        Returns:
+            A dictionary mapping file descriptions (e.g. "json", "png") to paths.
+        """
         # clean sample_id
-        sid = result.sample_id
-        if isinstance(sid, torch.Tensor):
-            sid = sid.item()
-        clean_id = os.path.basename(str(sid))
+        clean_id = Exporter._clean_sample_id(result.sample_id)
 
         sample_dir = os.path.join(output_dir, clean_id)
         os.makedirs(sample_dir, exist_ok=True)
@@ -118,19 +141,19 @@ class Exporter:
 
     @staticmethod
     def export(results: List[ExplanationResult], output_dir: str) -> None:
-        """Persist explanation results to disk."""
-        import torch
+        """Persist a batch of explanation results to disk.
 
+        Args:
+            results: A list of explanation results to export.
+            output_dir: The base directory to write all artifacts.
+        """
         os.makedirs(output_dir, exist_ok=True)
         csv_path = os.path.join(output_dir, "summary.csv")
         csv_rows: List[dict] = []
 
         for res in results:
             try:
-                sid = res.sample_id
-                if isinstance(sid, torch.Tensor):
-                    sid = sid.item()
-                clean_id = os.path.basename(str(sid))
+                clean_id = Exporter._clean_sample_id(res.sample_id)
                 Exporter.export_single(res, output_dir)
 
                 csv_rows.append(

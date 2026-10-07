@@ -97,7 +97,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--num-workers",
         type=int,
-        default=0,
+        default=None,
         help="Number of workers for the dataloader.",
     )
     return parser

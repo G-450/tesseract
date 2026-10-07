@@ -50,8 +50,8 @@ class ExplanationResult:
         node_imp = self.node_importance.float()
         edge_imp = self.edge_importance.float()
 
-        def _safe_argmax(t: torch.Tensor) -> int:
-            return int(t.argmax().item()) if t.numel() > 0 else -1
+        def _safe_abs_argmax(t: torch.Tensor) -> int:
+            return int(t.abs().argmax().item()) if t.numel() > 0 else -1
 
         def _safe_scalar(t: torch.Tensor, fn: str) -> float:
             if t.numel() == 0:
@@ -59,19 +59,28 @@ class ExplanationResult:
             val = getattr(t, fn)()
             return float(val.item()) if not (val != val) else 0.0  # NaN → 0
 
+        def _score_at_idx(t: torch.Tensor, idx: int) -> float:
+            if idx < 0 or t.numel() == 0:
+                return 0.0
+            val = t[idx]
+            return float(val.item()) if not (val != val) else 0.0
+
         def _safe_std(t: torch.Tensor) -> float:
             if t.numel() < 2:
                 return 0.0
             val = t.std()
             return float(val.item()) if not (val != val) else 0.0
 
+        top_node_idx = _safe_abs_argmax(node_imp)
+        top_edge_idx = _safe_abs_argmax(edge_imp)
+
         self.summary_statistics = {
-            "top_node_idx": _safe_argmax(node_imp),
-            "top_node_score": _safe_scalar(node_imp, "max"),
+            "top_node_idx": top_node_idx,
+            "top_node_score": _score_at_idx(node_imp, top_node_idx),
             "mean_node_importance": _safe_scalar(node_imp, "mean"),
             "std_node_importance": _safe_std(node_imp),
-            "top_edge_idx": _safe_argmax(edge_imp),
-            "top_edge_score": _safe_scalar(edge_imp, "max"),
+            "top_edge_idx": top_edge_idx,
+            "top_edge_score": _score_at_idx(edge_imp, top_edge_idx),
             "mean_edge_importance": _safe_scalar(edge_imp, "mean"),
             "std_edge_importance": _safe_std(edge_imp),
             "prediction_error": float(abs(self.prediction - self.target)),

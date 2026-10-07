@@ -38,7 +38,7 @@ from src.models.lightning_module import CGCNNLightningModule
 def _make_graph() -> Data:
     """Return a minimal valid crystal graph with 3 atoms and 4 bonds."""
     return Data(
-        x=torch.tensor([[1], [2], [3]], dtype=torch.long),
+        x=torch.tensor([1, 2, 3], dtype=torch.long),
         edge_index=torch.tensor([[0, 1, 1, 2], [1, 0, 2, 1]], dtype=torch.long),
         edge_attr=torch.randn(4, 41),
         y=torch.tensor([[1.0]]),
@@ -134,8 +134,8 @@ def test_base_explainer_full_implementation_accepted() -> None:
 
 def test_explanation_result_summary_statistics() -> None:
     """ExplanationResult.__post_init__ must populate summary_statistics."""
-    node_imp = torch.tensor([0.1, 0.9, 0.3])
-    edge_imp = torch.tensor([0.5, 0.2, 0.8, 0.1])
+    node_imp = torch.tensor([0.1, -0.9, 0.3])
+    edge_imp = torch.tensor([0.5, 0.2, -0.8, 0.1])
 
     result = ExplanationResult(
         sample_id="test-01",
@@ -149,11 +149,11 @@ def test_explanation_result_summary_statistics() -> None:
 
     stats = result.summary_statistics
     assert "top_node_idx" in stats
-    assert stats["top_node_idx"] == 1  # index of max 0.9
-    assert stats["top_node_score"] == pytest.approx(0.9, rel=1e-4)
+    assert stats["top_node_idx"] == 1  # index of max abs (-0.9)
+    assert stats["top_node_score"] == pytest.approx(-0.9, rel=1e-4)
     assert "top_edge_idx" in stats
-    assert stats["top_edge_idx"] == 2  # index of max 0.8
-    assert stats["top_edge_score"] == pytest.approx(0.8, rel=1e-4)
+    assert stats["top_edge_idx"] == 2  # index of max abs (-0.8)
+    assert stats["top_edge_score"] == pytest.approx(-0.8, rel=1e-4)
     assert stats["prediction_error"] == pytest.approx(0.5, rel=1e-4)
 
 
@@ -185,13 +185,13 @@ def test_integrated_gradients_explain_batch_skips_bad_samples() -> None:
     explainer = IntegratedGradientsExplainer(model)
 
     good_graph = _make_graph()
-    # Corrupt a graph: edge_attr with wrong feature dim → will fail attribution
+    # Corrupt a graph: out-of-bounds node in edge_index -> will fail in conv
     bad_graph = Data(
-        x=torch.tensor([[1]], dtype=torch.long),
-        edge_index=torch.zeros((2, 0), dtype=torch.long),
-        edge_attr=torch.zeros((0, 41)),
+        x=torch.tensor([1, 2], dtype=torch.long),
+        edge_index=torch.tensor([[0, 5], [5, 0]], dtype=torch.long),
+        edge_attr=torch.randn((2, 41)),
         y=torch.tensor([[0.0]]),
-        batch=torch.zeros(1, dtype=torch.long),
+        batch=torch.zeros(2, dtype=torch.long),
     )
 
     results = explainer.explain_batch([good_graph, bad_graph])
@@ -392,11 +392,15 @@ def test_explain_cli_integration(tmp_path: Any, monkeypatch: Any) -> None:
 
     monkeypatch.setattr("src.cli.explain_cli.Evaluator", MockEvaluator)
 
+    dummy_ckpt = str(tmp_path / "dummy.ckpt")
+    with open(dummy_ckpt, "w") as f:
+        f.write("dummy")
+
     out_dir = str(tmp_path / "explanations")
     test_args = [
         "explain_cli.py",
         "--checkpoint",
-        "dummy.ckpt",
+        dummy_ckpt,
         "--output-dir",
         out_dir,
         "--num-samples",
@@ -405,7 +409,6 @@ def test_explain_cli_integration(tmp_path: Any, monkeypatch: Any) -> None:
         "integrated_gradients",
     ]
 
-    monkeypatch.setattr("os.path.exists", lambda p: True)
     monkeypatch.setattr(sys, "argv", test_args)
 
     main()

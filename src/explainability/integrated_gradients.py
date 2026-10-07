@@ -95,9 +95,7 @@ class IntegratedGradientsExplainer(BaseExplainer):
 
             ig = IntegratedGradients(_forward_from_embedding)
 
-            x_embedded = self._embedding_layer(
-                graph.x.long().squeeze(-1)
-            )  # type: ignore
+            x_embedded = self._embedding_layer(graph.x.long().view(-1))  # type: ignore
             edge_attr = graph.edge_attr.float()
 
             node_attr, edge_attr_attr = ig.attribute(
@@ -110,9 +108,9 @@ class IntegratedGradientsExplainer(BaseExplainer):
             edge_importance = edge_attr_attr.squeeze(0).sum(dim=-1).detach()
 
             with torch.no_grad():
-                pred = self.model(
-                    graph.x, graph.edge_index, graph.edge_attr, graph.batch
-                )
+                pred = _forward_from_embedding(
+                    x_embedded.unsqueeze(0), edge_attr.unsqueeze(0)
+                ).squeeze(0)
 
             return ExplanationResult(
                 sample_id=sample_id,
@@ -156,9 +154,25 @@ class IntegratedGradientsExplainer(BaseExplainer):
         result: ExplanationResult,
         output_path: Optional[str] = None,
     ) -> Optional[str]:
-        """Generate a heatmap figure for node and edge importances."""
+        """Generate a heatmap figure for node and edge importances.
+
+        Args:
+            result: The explanation result to visualize.
+            output_path: Optional path to save the heatmap.
+
+        Returns:
+            The path to the saved heatmap if output_path is provided, else None.
+        """
         return Exporter.visualize(result, output_path)
 
     def export(self, result: ExplanationResult, output_dir: str) -> Dict[str, str]:
-        """Export JSON data and PNG heatmap for a single explanation."""
+        """Export JSON data and PNG heatmap for a single explanation.
+
+        Args:
+            result: The explanation result to export.
+            output_dir: The directory to save the exported files.
+
+        Returns:
+            A dictionary mapping file descriptions to their saved paths.
+        """
         return Exporter.export_single(result, output_dir)
