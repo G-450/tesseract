@@ -36,6 +36,7 @@ from src.inference.predictor import (
     BatchPredictionResult,
     PredictionResult,
     Predictor,
+    checkpoint_safe_globals,
 )
 from src.models.lightning_module import CGCNNLightningModule
 
@@ -308,6 +309,54 @@ def test_load_model_returns_frozen_eval_model(tmp_path: Any) -> None:
 
     assert not model.training
     assert all(not param.requires_grad for param in model.parameters())
+
+
+def test_checkpoint_loads_when_weights_only_is_enforced(tmp_path: Any) -> None:
+    """Project config classes are allowlisted for weights_only loading.
+
+    From PyTorch 2.6 onwards torch.load defaults to weights_only=True, which
+    rejects the pickled CGCNNConfig stored in a checkpoint's hyperparameters.
+    This asserts the allowlist covers it, independently of the local default.
+    """
+    checkpoint_path, _ = _write_checkpoint(tmp_path)
+    with checkpoint_safe_globals():
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    assert isinstance(checkpoint["hyper_parameters"]["config"], CGCNNConfig)
+
+
+def test_weights_only_load_is_restricted_without_the_allowlist(tmp_path: Any) -> None:
+    """Outside the allowlist, weights_only loading still blocks the globals.
+
+    Guards that the test above is meaningful and that the allowlist is scoped
+    to the load rather than applied process-wide.
+    """
+    checkpoint_path, _ = _write_checkpoint(tmp_path)
+    with pytest.raises(Exception):
+        torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+
+
+def test_load_model_survives_enforced_weights_only(
+    tmp_path: Any, monkeypatch: Any
+) -> None:
+    """load_model() works when torch.load enforces weights_only.
+
+    Reproduces the PyTorch >= 2.6 default through Lightning's own loader, so
+    the allowlist is exercised on the real checkpoint-loading path regardless
+    of the installed PyTorch version.
+    """
+    checkpoint_path, _ = _write_checkpoint(tmp_path)
+    original_load = torch.load
+
+    def enforced_load(*args: Any, **kwargs: Any) -> Any:
+        if kwargs.get("weights_only") is None:
+            kwargs["weights_only"] = True
+        return original_load(*args, **kwargs)
+
+    monkeypatch.setattr(torch, "load", enforced_load)
+
+    predictor = Predictor(checkpoint_path=checkpoint_path, device="cpu")
+    model = predictor.load_model()
+    assert not model.training
 
 
 def test_prediction_matches_the_checkpointed_model(tmp_path: Any) -> None:

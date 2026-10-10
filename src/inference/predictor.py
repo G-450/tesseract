@@ -11,17 +11,23 @@ Inference never modifies or retrains the model: the checkpoint is loaded in
 ``eval`` mode and frozen.
 """
 
+import contextlib
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, ContextManager, Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 from pymatgen.core.structure import Structure
 from torch_geometric.data import Batch, Data  # type: ignore
 
 from src.config.dataset_config import DatasetConfig, GraphConfig, load_dataset_config
-from src.config.model_config import CGCNNConfig, load_cgcnn_config
+from src.config.model_config import (
+    CGCNNConfig,
+    ModelConfig,
+    OptimizerConfig,
+    load_cgcnn_config,
+)
 from src.graphs.builder import CrystalGraphBuilder
 from src.inference.exceptions import (
     ModelLoadError,
@@ -31,6 +37,28 @@ from src.inference.exceptions import (
 from src.models.lightning_module import CGCNNLightningModule
 
 logger = logging.getLogger(__name__)
+
+# Checkpoints store their hyperparameters as pickled project dataclasses. From
+# PyTorch 2.6 onwards torch.load defaults to weights_only=True, which rejects
+# any non-tensor global, so these classes are allowlisted while a checkpoint is
+# read. Only the project's own configuration classes are permitted; every other
+# global stays blocked.
+CHECKPOINT_SAFE_GLOBALS = (CGCNNConfig, ModelConfig, OptimizerConfig)
+
+
+def checkpoint_safe_globals() -> ContextManager[Any]:
+    """Returns a context manager allowlisting the project's config classes.
+
+    Falls back to a no-op on PyTorch versions predating
+    ``torch.serialization.safe_globals``, where ``torch.load`` does not
+    restrict globals by default.
+    """
+    safe_globals = getattr(torch.serialization, "safe_globals", None)
+    if safe_globals is None:
+        return contextlib.nullcontext()
+    allowlist: ContextManager[Any] = safe_globals(list(CHECKPOINT_SAFE_GLOBALS))
+    return allowlist
+
 
 # Placeholder graph metadata for structures that are not dataset records.
 # The target is unknown at inference time; the builder requires one, so a
@@ -189,11 +217,12 @@ class Predictor:
 
         logger.info(f"Loading checkpoint from {self.checkpoint_path}...")
         try:
-            model = CGCNNLightningModule.load_from_checkpoint(
-                self.checkpoint_path,
-                config=self.model_config,
-                map_location=self.device,
-            )
+            with checkpoint_safe_globals():
+                model = CGCNNLightningModule.load_from_checkpoint(
+                    self.checkpoint_path,
+                    config=self.model_config,
+                    map_location=self.device,
+                )
         except Exception as exc:
             raise ModelLoadError(self.checkpoint_path, str(exc)) from exc
 

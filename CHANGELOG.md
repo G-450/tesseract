@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/inference/__init__.py`: full public API with `__all__`.
   - `src/cli/predict_cli.py`: `predict` and `predict-batch` subcommands with `--checkpoint`, `--dataset-config`, `--model-config`, `--input` / `--input-dir`, `--output` / `--output-dir`, `--batch-size` and `--device` (PRD §121).
   - Inference depends only on `src.config`, `src.graphs` and `src.models` — never on the trainer, the datamodule or the processed dataset (PRD §89).
-  - `tests/test_inference.py`: 41 unit and integration tests covering the exception hierarchy, result dataclasses, training/inference preprocessing parity, checkpoint loading and freezing, structure discovery, failure isolation, batching equivalence, CSV/JSON export and both CLI subcommands.
+  - Checkpoint loading works under PyTorch 2.6+, where `torch.load` defaults to `weights_only=True`: the project's own config dataclasses (`CGCNNConfig`, `ModelConfig`, `OptimizerConfig`) are allowlisted for the duration of the load via `torch.serialization.safe_globals`, so pickled hyperparameters deserialize while every other global stays blocked. Falls back to a no-op on PyTorch versions without `safe_globals`.
+  - `tests/test_inference.py`: 44 unit and integration tests covering the exception hierarchy, result dataclasses, training/inference preprocessing parity, checkpoint loading and freezing, structure discovery, failure isolation, batching equivalence, CSV/JSON export and both CLI subcommands.
 
 - **Phase 8: Explainability Subsystem:** Fully implemented per PRD §82–§88.
   - `src/explainability/base.py`: `BaseExplainer` ABC with `explain()`, `explain_batch()`, `visualize()`, `export()` abstract methods; `ExplanationResult` dataclass with auto-computed `summary_statistics` (top node/edge idx, scores, mean, std, prediction error).
