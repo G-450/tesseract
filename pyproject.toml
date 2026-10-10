@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "formation-energy-prediction"
-version = "0.1.0"
+version = "1.0.0"
 description = "Explainable Graph Neural Network Pipeline for Formation Energy Prediction"
 authors = [{name = "Mithul"}]
 requires-python = ">=3.12"
@@ -32,6 +32,9 @@ dev = [
     "flake8>=7.0.0",
     "pandas-stubs>=2.1.0",
 ]
+
+[project.scripts]
+project = "src.cli.main_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

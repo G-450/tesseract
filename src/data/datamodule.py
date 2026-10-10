@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 
 import pytorch_lightning as pl  # type: ignore
+import torch
 from torch.utils.data import Subset, random_split
 from torch_geometric.loader import DataLoader  # type: ignore
 
@@ -12,11 +13,20 @@ logger = logging.getLogger(__name__)
 
 
 class CrystalDataModule(pl.LightningDataModule):
-    """PyTorch Lightning DataModule for the crystal graph dataset."""
+    """PyTorch Lightning DataModule for the crystal graph dataset.
 
-    def __init__(self, config: DatasetConfig):
+    Args:
+        config: Dataset and dataloader configuration.
+        seed: Random seed for the train/val/test split generator.
+            Defaults to 42 for backwards compatibility, but callers
+            should pass ``experiment.seed`` so the configured seed
+            controls the split (PRD §58).
+    """
+
+    def __init__(self, config: DatasetConfig, seed: int = 42):
         super().__init__()
         self.config = config
+        self.seed = seed
         self.dataset: Optional[ShardedGraphDataset] = None
         self.train_dataset: Optional[Subset] = None
         self.val_dataset: Optional[Subset] = None
@@ -42,17 +52,15 @@ class CrystalDataModule(pl.LightningDataModule):
             val_len = int(total_len * val_ratio)
             test_len = total_len - train_len - val_len
 
-            # We use a fixed generator for deterministic splits across runs
-            import torch
-
-            generator = torch.Generator().manual_seed(42)
+            generator = torch.Generator().manual_seed(self.seed)
 
             self.train_dataset, self.val_dataset, self.test_dataset = random_split(
                 self.dataset, [train_len, val_len, test_len], generator=generator
             )
 
             logger.info(
-                f"Dataset split: {train_len} train, {val_len} val, {test_len} test."
+                f"Dataset split (seed={self.seed}): "
+                f"{train_len} train, {val_len} val, {test_len} test."
             )
 
     def train_dataloader(self) -> DataLoader:

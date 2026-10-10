@@ -57,6 +57,7 @@ class Evaluator:
         model_config_path: str = "configs/model.yaml",
         device: Optional[str] = None,
         num_workers: Optional[int] = None,
+        seed: int = 42,
     ) -> None:
         """Initializes the Evaluator with checkpoint and configuration paths.
 
@@ -68,10 +69,14 @@ class Evaluator:
                 defaults to 'cuda' if available else 'cpu'.
             num_workers: Optional override for the dataset config's
                 dataloader.num_workers.
+            seed: Random seed forwarded to ``CrystalDataModule`` for the
+                train/val/test split. Should match the seed used during
+                training so the test split is identical.
         """
         self.checkpoint_path = checkpoint_path
         self.dataset_config_path = dataset_config_path
         self.model_config_path = model_config_path
+        self.seed = seed
 
         self.dataset_config: DatasetConfig = load_dataset_config(dataset_config_path)
         self.model_config: CGCNNConfig = load_cgcnn_config(model_config_path)
@@ -109,7 +114,7 @@ class Evaluator:
         Returns:
             DataLoader: PyG DataLoader for the test dataset.
         """
-        datamodule = CrystalDataModule(config=self.dataset_config)
+        datamodule = CrystalDataModule(config=self.dataset_config, seed=self.seed)
         datamodule.setup(stage="test")
         return datamodule.test_dataloader()
 

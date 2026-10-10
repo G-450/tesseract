@@ -1,7 +1,13 @@
+"""Model and optimizer configuration for CGCNN."""
+
 import os
 from dataclasses import dataclass, field
+from typing import Any, Dict
 
 import yaml  # type: ignore
+
+from src.config.exceptions import ConfigFileError, UnknownConfigKeyError
+from src.config.experiment_config import _build
 
 
 @dataclass
@@ -28,21 +34,44 @@ class CGCNNConfig:
 
 
 def load_cgcnn_config(config_path: str = "configs/model.yaml") -> CGCNNConfig:
+    """Loads the model configuration from a YAML file.
+
+    Unknown keys raise ``UnknownConfigKeyError`` rather than a raw
+    ``TypeError`` (PRD §122).
+
+    Args:
+        config_path: The path to the YAML configuration file.
+
+    Returns:
+        CGCNNConfig: The loaded configuration object.
+
+    Raises:
+        ConfigFileError: If the file cannot be read or parsed.
+        UnknownConfigKeyError: If the file contains unrecognised keys.
+    """
     if not os.path.exists(config_path):
         return CGCNNConfig()
 
-    with open(config_path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except (OSError, yaml.YAMLError) as exc:
+        raise ConfigFileError(config_path, str(exc)) from exc
 
     if not data:
         return CGCNNConfig()
+    if not isinstance(data, dict):
+        raise ConfigFileError(config_path, "top-level document is not a mapping")
 
-    model_data = data.get("model", {})
-    optimizer_data = data.get("optimizer", {})
+    allowed_top = {"model", "optimizer"}
+    unknown_top = set(data) - allowed_top
+    if unknown_top:
+        raise UnknownConfigKeyError("<root>", list(unknown_top), list(allowed_top))
 
-    model_config = ModelConfig(**model_data) if model_data else ModelConfig()
-    optimizer_config = (
-        OptimizerConfig(**optimizer_data) if optimizer_data else OptimizerConfig()
-    )
+    model_data: Dict[str, Any] = dict(data.get("model") or {})
+    optimizer_data: Dict[str, Any] = dict(data.get("optimizer") or {})
+
+    model_config = _build(ModelConfig, model_data, "model")
+    optimizer_config = _build(OptimizerConfig, optimizer_data, "optimizer")
 
     return CGCNNConfig(model=model_config, optimizer=optimizer_config)

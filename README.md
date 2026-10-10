@@ -39,30 +39,40 @@ comes from `--run-id`, from `experiment.run_id` in `configs/experiment.yaml`,
 or is generated as `<name>_<UTC timestamp>`.
 
 ```bash
+# Check environment health
+project doctor
+
 # Prepare the dataset and build crystal graphs
-python src/cli/dataset_cli.py validate
-python src/cli/dataset_cli.py build-graphs
+project dataset validate
+project dataset build-graphs
 
 # Train. Creates experiments/runs/<run_id>/{checkpoints,logs,config}/
-python src/cli/train_cli.py --run-id my_run
+project train --run-id my_run
 
 # Optional: explanations and predictions for external structures
-python src/cli/explain_cli.py \
+project explain \
     --checkpoint experiments/runs/my_run/checkpoints/best.ckpt \
     --output-dir experiments/runs/my_run/explanations
-python src/cli/predict_cli.py predict-batch \
+project predict-batch \
     --checkpoint experiments/runs/my_run/checkpoints/best.ckpt \
     --input-dir path/to/cifs \
     --output-dir experiments/runs/my_run/predictions
 
 # Evaluate, plot, record provenance and render the experiment report
-python src/cli/report_cli.py \
+project report \
     --run-id my_run \
     --checkpoint experiments/runs/my_run/checkpoints/best.ckpt
 
 # Re-render report.md from artifacts already on disk
-python src/cli/report_cli.py --run-id my_run --report-only
+project report --run-id my_run --report-only
+
+# Delete cached graph shards to force regeneration
+project clean-cache
 ```
+
+The `project` command is installed via `pip install -e .` and dispatches to
+every subsystem. You can also invoke each CLI module directly, e.g.
+`python src/cli/train_cli.py`.
 
 `experiments/runs/<run_id>/report.md` is the primary artifact for reviewing a
 run: it collects provenance, dataset fingerprint, configuration, training

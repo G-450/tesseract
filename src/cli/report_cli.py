@@ -310,6 +310,7 @@ def _run_evaluation(
         model_config_path=args.model_config,
         device=args.device,
         num_workers=args.num_workers,
+        seed=experiment.seed,
     )
 
     logger.info("Executing evaluation pipeline...")

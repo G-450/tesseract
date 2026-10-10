@@ -1,7 +1,13 @@
+"""Dataset configuration: paths, graph parameters and loader settings."""
+
 import os
 from dataclasses import dataclass, field
+from typing import Any, Dict
 
 import yaml  # type: ignore
+
+from src.config.exceptions import ConfigFileError, UnknownConfigKeyError
+from src.config.experiment_config import _build
 
 
 @dataclass
@@ -38,34 +44,47 @@ class DatasetConfig:
 def load_dataset_config(config_path: str = "configs/dataset.yaml") -> DatasetConfig:
     """Loads the dataset configuration from a YAML file.
 
+    Unknown keys raise ``UnknownConfigKeyError`` rather than a raw
+    ``TypeError`` (PRD §122).
+
     Args:
-        config_path (str): The path to the YAML configuration file.
+        config_path: The path to the YAML configuration file.
 
     Returns:
         DatasetConfig: The loaded configuration object.
+
+    Raises:
+        ConfigFileError: If the file cannot be read or parsed.
+        UnknownConfigKeyError: If the file contains unrecognised keys.
     """
     if not os.path.exists(config_path):
         return DatasetConfig()
 
-    with open(config_path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except (OSError, yaml.YAMLError) as exc:
+        raise ConfigFileError(config_path, str(exc)) from exc
 
-    if data and "dataset" in data:
-        dataset_data = data["dataset"].copy()
+    if not data:
+        return DatasetConfig()
+    if not isinstance(data, dict):
+        raise ConfigFileError(config_path, "top-level document is not a mapping")
 
-        # Parse graph config if present
-        graph_data = dataset_data.pop("graph", None)
-        graph_config = GraphConfig(**graph_data) if graph_data else GraphConfig()
+    unknown_top = set(data) - {"dataset"}
+    if unknown_top:
+        raise UnknownConfigKeyError("<root>", list(unknown_top), ["dataset"])
 
-        # Parse dataloader config if present
-        dataloader_data = dataset_data.pop("dataloader", None)
-        dataloader_config = (
-            DataLoaderConfig(**dataloader_data)
-            if dataloader_data
-            else DataLoaderConfig()
-        )
+    dataset_data: Dict[str, Any] = dict(data.get("dataset") or {})
 
-        return DatasetConfig(
-            **dataset_data, graph=graph_config, dataloader=dataloader_config
-        )
-    return DatasetConfig()
+    graph_data = dict(dataset_data.pop("graph", None) or {})
+    graph_config = _build(GraphConfig, graph_data, "dataset.graph")
+
+    dataloader_data = dict(dataset_data.pop("dataloader", None) or {})
+    dataloader_config = _build(DataLoaderConfig, dataloader_data, "dataset.dataloader")
+
+    return _build(
+        DatasetConfig,
+        {**dataset_data, "graph": graph_config, "dataloader": dataloader_config},
+        "dataset",
+    )
