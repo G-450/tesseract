@@ -36,9 +36,9 @@ from src.inference.predictor import (
     BatchPredictionResult,
     PredictionResult,
     Predictor,
-    checkpoint_safe_globals,
 )
 from src.models.lightning_module import CGCNNLightningModule
+from src.utils.checkpoints import checkpoint_safe_globals
 
 # ---------------------------------------------------------------------------
 # Helpers
