@@ -8,7 +8,11 @@ datasets/metadata/*
 
 # Model Outputs & Experiments
 outputs/
-experiments/
+# Experiment artifacts are generated; only the layout doc is tracked.
+# 'experiments/*' rather than 'experiments/' so git still descends into
+# the directory and can see the negation below.
+experiments/*
+!experiments/README.md
 *.pkl
 *.pt
 *.pth
