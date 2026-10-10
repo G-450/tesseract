@@ -482,3 +482,64 @@ def test_explain_cli_integration(tmp_path: Any, monkeypatch: Any) -> None:
     assert len(rows) == 2
     assert rows[0]["sample_id"] == "12345"
     assert rows[1]["sample_id"] == "67890"
+
+
+def test_explain_cli_integration_gnn_explainer(tmp_path: Any, monkeypatch: Any) -> None:
+    """Integration test for explain_cli.py with gnn_explainer."""
+    import csv
+    import sys
+
+    from src.cli.explain_cli import main
+
+    graph1 = _make_graph()
+    graph1.dataset_record_id = torch.tensor([12345])
+
+    class MockEvaluator:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        def load_model(self) -> Any:
+            return _make_model()
+
+        def get_dataloader(self) -> Any:
+            class MockBatch:
+                def to_data_list(self) -> Any:
+                    return [graph1]
+
+            return [MockBatch()]
+
+    monkeypatch.setattr("src.cli.explain_cli.Evaluator", MockEvaluator)
+
+    dummy_ckpt = str(tmp_path / "dummy_gnn.ckpt")
+    with open(dummy_ckpt, "w") as f:
+        f.write("dummy")
+
+    out_dir = str(tmp_path / "explanations_gnn")
+    test_args = [
+        "explain_cli.py",
+        "--checkpoint",
+        dummy_ckpt,
+        "--output-dir",
+        out_dir,
+        "--num-samples",
+        "1",
+        "--method",
+        "gnn_explainer",
+    ]
+
+    monkeypatch.setattr(sys, "argv", test_args)
+
+    main()
+
+    assert os.path.exists(os.path.join(out_dir, "12345"))
+    assert os.path.exists(os.path.join(out_dir, "12345", "explanation.json"))
+    assert os.path.exists(os.path.join(out_dir, "12345", "heatmap.png"))
+
+    csv_path = os.path.join(out_dir, "summary.csv")
+    assert os.path.exists(csv_path)
+
+    with open(csv_path, newline="") as fp:
+        rows = list(csv.DictReader(fp))
+    assert len(rows) == 1
+    assert rows[0]["sample_id"] == "12345"
+    assert rows[0]["method"] == "gnn_explainer"
