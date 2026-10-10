@@ -347,3 +347,42 @@ def test_evaluate_cli_flow(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> No
     assert os.path.exists(output_dir / "summary.md")
     assert os.path.exists(output_dir / "parity_plot.png")
     assert os.path.exists(output_dir / "residual_plot.png")
+
+
+def test_evaluator_loads_checkpoint_under_enforced_weights_only(
+    tmp_path: Any, monkeypatch: Any
+) -> None:
+    """Evaluator.load_model() works when torch.load enforces weights_only.
+
+    From PyTorch 2.6 onwards torch.load defaults to weights_only=True, which
+    rejects the pickled CGCNNConfig stored in a checkpoint's hyperparameters.
+    This reproduces that default through Lightning's own loader so the fix is
+    exercised regardless of the installed PyTorch version.
+    """
+    import pytorch_lightning as pl
+
+    model = CGCNNLightningModule(CGCNNConfig())
+    checkpoint_path = tmp_path / "trained.ckpt"
+    torch.save(
+        {
+            "state_dict": model.state_dict(),
+            "hyper_parameters": {"config": CGCNNConfig()},
+            "pytorch-lightning_version": pl.__version__,
+            "epoch": 0,
+            "global_step": 0,
+        },
+        checkpoint_path,
+    )
+
+    original_load = torch.load
+
+    def enforced_load(*args: Any, **kwargs: Any) -> Any:
+        if kwargs.get("weights_only") is None:
+            kwargs["weights_only"] = True
+        return original_load(*args, **kwargs)
+
+    monkeypatch.setattr(torch, "load", enforced_load)
+
+    loaded = Evaluator(checkpoint_path=str(checkpoint_path), device="cpu").load_model()
+    assert not loaded.training
+    assert all(not param.requires_grad for param in loaded.parameters())

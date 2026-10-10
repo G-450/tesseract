@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- **Checkpoint loading under PyTorch 2.6+:** `Evaluator.load_model()` (Phase 7) failed to load any real checkpoint on PyTorch 2.6 or newer, where `torch.load` defaults to `weights_only=True` and rejects the pickled `CGCNNConfig` stored in a checkpoint's hyperparameters. This broke `evaluate_cli.py` and `explain_cli.py`, which both load models through the `Evaluator`; the existing tests missed it because they mock the loader. The allowlist introduced for Phase 9 now lives in `src/utils/checkpoints.py` (PRD §10.10) and is shared by the evaluation and inference subsystems, so the permitted globals are defined in exactly one place. Covered by a regression test that reproduces the 2.6 default through Lightning's own loader.
+- Removed a `bash.exe.stackdump` crash artifact that was committed by accident, and added `*.stackdump` to `.gitignore`.
+
 ### Added
 - **Phase 9: Inference and Prediction:** Fully implemented per PRD §89–§92.
   - `src/inference/predictor.py`: `Predictor` loading a checkpoint in frozen `eval` mode and predicting formation energy (eV/atom) for structures outside the dataset. `PredictionResult` and `BatchPredictionResult` dataclasses, the latter carrying per-structure failures and an aggregate `summary()` (count, mean, min, max, std).

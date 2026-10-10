@@ -12,6 +12,7 @@ from src.config.model_config import CGCNNConfig, load_cgcnn_config
 from src.data.datamodule import CrystalDataModule
 from src.evaluation.metrics import compute_all_metrics
 from src.models.lightning_module import CGCNNLightningModule
+from src.utils.checkpoints import checkpoint_safe_globals
 
 logger = logging.getLogger(__name__)
 
@@ -92,10 +93,11 @@ class Evaluator:
         """
         if self._model is None:
             logger.info(f"Loading checkpoint from {self.checkpoint_path}...")
-            self._model = CGCNNLightningModule.load_from_checkpoint(
-                self.checkpoint_path,
-                config=self.model_config,
-            )
+            with checkpoint_safe_globals():
+                self._model = CGCNNLightningModule.load_from_checkpoint(
+                    self.checkpoint_path,
+                    config=self.model_config,
+                )
             self._model.to(self.device)
             self._model.eval()
             self._model.freeze()
