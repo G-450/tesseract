@@ -132,7 +132,7 @@ def main() -> None:
     logger.info(f"Model config: {dataclasses.asdict(model_config)}")
 
     # Instantiate DataModule and Model
-    datamodule = CrystalDataModule(config=dataset_config)
+    datamodule = CrystalDataModule(config=dataset_config, seed=experiment_config.seed)
     model = CGCNNLightningModule(config=model_config)
 
     # Callbacks
