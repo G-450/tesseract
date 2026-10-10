@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- **Phase 9: Inference and Prediction:** Fully implemented per PRD §89–§92.
+  - `src/inference/predictor.py`: `Predictor` loading a checkpoint in frozen `eval` mode and predicting formation energy (eV/atom) for structures outside the dataset. `PredictionResult` and `BatchPredictionResult` dataclasses, the latter carrying per-structure failures and an aggregate `summary()` (count, mean, min, max, std).
+  - Preprocessing parity (PRD §90): inference builds graphs through the training `CrystalGraphBuilder` with the `GraphConfig` from `configs/dataset.yaml`. Verified bit-identical — `x`, `edge_index`, `edge_attr` and `edge_image` all match the processed shards training consumed for the same records.
+  - Single prediction from a CIF file or an in-memory `pymatgen.Structure`; batch prediction over a directory or an explicit path list. Structures that fail to parse or predict are logged and skipped, never aborting the batch (PRD §91).
+  - Batched forward passes with automatic per-structure fallback, so one bad graph cannot discard an entire batch. Batched and single-structure scoring agree to within 1e-5 eV/atom.
+  - `src/inference/exporter.py`: `PredictionExporter` writing `predictions.csv` and `predictions.json` (predictions, run summary, skipped structures), plus `export_single()` for one-off CSV/JSON output.
+  - `src/inference/exceptions.py`: `InferenceError` hierarchy — `ModelLoadError`, `StructureLoadError`, `PredictionError`, `PredictionExportError` — integrated with the project exception system (PRD §123).
+  - `src/inference/__init__.py`: full public API with `__all__`.
+  - `src/cli/predict_cli.py`: `predict` and `predict-batch` subcommands with `--checkpoint`, `--dataset-config`, `--model-config`, `--input` / `--input-dir`, `--output` / `--output-dir`, `--batch-size` and `--device` (PRD §121).
+  - Inference depends only on `src.config`, `src.graphs` and `src.models` — never on the trainer, the datamodule or the processed dataset (PRD §89).
+  - `tests/test_inference.py`: 41 unit and integration tests covering the exception hierarchy, result dataclasses, training/inference preprocessing parity, checkpoint loading and freezing, structure discovery, failure isolation, batching equivalence, CSV/JSON export and both CLI subcommands.
+
 - **Phase 8: Explainability Subsystem:** Fully implemented per PRD §82–§88.
   - `src/explainability/base.py`: `BaseExplainer` ABC with `explain()`, `explain_batch()`, `visualize()`, `export()` abstract methods; `ExplanationResult` dataclass with auto-computed `summary_statistics` (top node/edge idx, scores, mean, std, prediction error).
   - `src/explainability/exceptions.py`: `ExplainabilityError` hierarchy — `ExplainerInitializationError`, `SampleExplanationError`, `ExportError` — integrated with project exception system (PRD §123).
