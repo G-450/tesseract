@@ -2,7 +2,7 @@
 
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -10,6 +10,17 @@ import pandas as pd
 from src.evaluation.evaluator import EvaluationResult
 
 PUBLISHED_CGCNN_BASELINE_MAE = 0.039  # eV/atom on matbench_mp_e_form
+
+DEFAULT_SUMMARY_ARTIFACT_LINKS: Dict[str, str] = {
+    "Metrics JSON": "metrics.json",
+    "Sample Predictions CSV": "predictions.csv",
+    "Parity Plot": "parity_plot.png",
+    "Residual Distribution Plot": "residual_plot.png",
+    "Prediction Histogram": "prediction_histogram.png",
+    "Training Loss Curves": "loss_curve.png",
+    "Learning Rate Schedule": "learning_rate.png",
+}
+"""Artifact links used when the caller does not supply its own layout."""
 
 
 class Reporter:
@@ -24,12 +35,21 @@ class Reporter:
         """
         self.baseline_mae = baseline_mae
 
-    def export(self, result: EvaluationResult, output_dir: str) -> Dict[str, str]:
+    def export(
+        self,
+        result: EvaluationResult,
+        output_dir: str,
+        artifact_links: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, str]:
         """Exports all evaluation reports to the given output directory.
 
         Args:
             result: The EvaluationResult containing predictions and metrics.
             output_dir: Target directory path for exported files.
+            artifact_links: Optional mapping of artifact label to a path,
+                relative to ``output_dir``, listed at the end of the summary.
+                Defaults to the flat layout where every artifact sits beside
+                the summary.
 
         Returns:
             Dict[str, str]: Dictionary mapping artifact names to their file paths.
@@ -42,7 +62,7 @@ class Reporter:
 
         self.export_metrics_json(result, metrics_path)
         self.export_predictions_csv(result, predictions_path)
-        self.export_summary_md(result, summary_path)
+        self.export_summary_md(result, summary_path, artifact_links=artifact_links)
 
         return {
             "metrics_json": metrics_path,
@@ -103,12 +123,21 @@ class Reporter:
         )
         df.to_csv(output_path, index=False)
 
-    def export_summary_md(self, result: EvaluationResult, output_path: str) -> None:
+    def export_summary_md(
+        self,
+        result: EvaluationResult,
+        output_path: str,
+        artifact_links: Optional[Dict[str, str]] = None,
+    ) -> None:
         """Exports a formatted Markdown evaluation report.
 
         Args:
             result: The EvaluationResult object.
             output_path: File path to save summary.md.
+            artifact_links: Optional mapping of artifact label to a path
+                relative to the summary, listed under "Exported Artifacts".
+                Defaults to the flat layout where every artifact sits beside
+                the summary.
         """
         num_samples = len(result.predictions)
         mae = result.metrics.get("mae", 0.0)
@@ -188,6 +217,15 @@ class Reporter:
             f"Mean signed prediction error ($\\hat{{y}} - y$) |"
         )
 
+        links = (
+            artifact_links
+            if artifact_links is not None
+            else DEFAULT_SUMMARY_ARTIFACT_LINKS
+        )
+        artifact_lines = "\n".join(
+            f"- **{label}**: [`{path}`]({path})" for label, path in links.items()
+        )
+
         markdown_content = f"""# CGCNN Model Evaluation Summary
 
 ## Overview
@@ -241,11 +279,7 @@ class Reporter:
 ---
 
 ## Exported Artifacts
-- **Metrics JSON**: [`metrics.json`](metrics.json)
-- **Sample Predictions CSV**: [`predictions.csv`](predictions.csv)
-- **Parity Plot**: [`parity_plot.png`](parity_plot.png)
-- **Residual Distribution Plot**: [`residual_plot.png`](residual_plot.png)
-- **Training Loss Curves**: [`loss_curve.png`](loss_curve.png)
+{artifact_lines}
 """
 
         with open(output_path, "w", encoding="utf-8") as f:

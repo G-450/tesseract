@@ -1,0 +1,31 @@
+# Experiment configuration (PRD §17, §18, §122).
+#
+# Defines the identity of a run, the seed that makes it reproducible and the
+# root under which every artifact for that run is written. One run_id maps to
+# exactly one directory: experiments/<runs_dirname>/<run_id>/.
+experiment:
+  # Human-readable experiment name. Used as the prefix of generated run IDs.
+  name: "cgcnn_mp_e_form"
+
+  # Global random seed recorded in every run's provenance metadata.
+  seed: 42
+
+  # Fixed run identifier. Leave empty (null) to generate one per run as
+  # "<name>_<UTC timestamp>", e.g. "cgcnn_mp_e_form_20261010T153000Z".
+  # Set it explicitly to reproduce a run into a named directory.
+  run_id: null
+
+  # Root directory holding every experiment artifact.
+  experiments_dir: "experiments"
+
+  # Subdirectory of experiments_dir holding the per-run directories. Keeps
+  # structured runs separate from the legacy top-level directories.
+  runs_dirname: "runs"
+
+  # Published CGCNN baseline MAE (eV/atom) on matbench_mp_e_form, used for the
+  # benchmark comparison in reports (PRD §99).
+  baseline_mae_ev_atom: 0.039
+
+  logging:
+    # Root log level for CLI entry points.
+    level: "INFO"
