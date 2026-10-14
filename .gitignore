@@ -41,6 +41,6 @@ pyrightconfig.json
 
 # Local scripts and presentations
 explainable_cgcnn_project_presentation/
-plot_metrics.py
+
 # Cygwin/Git Bash crash artifacts
 *.stackdump

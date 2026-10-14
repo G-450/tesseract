@@ -88,7 +88,6 @@ explainability and prediction artifacts. See
 * `experiments/` - One directory per run under `experiments/runs/<run_id>/`
   (checkpoints, logs, plots, explanations, predictions, metrics, report);
   see [`experiments/README.md`](experiments/README.md)
-* `notebooks/` - Jupyter notebooks for exploratory data analysis and demonstrations
 * `outputs/` - General pipeline outputs
 * `scripts/` - Standalone utility and execution scripts
 * `src/` - The core application source code containing modules for config, data, graphs, models, training, evaluation, explainability, inference, visualization, utils, and cli.
