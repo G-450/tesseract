@@ -5,12 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-11
+
 ### Fixed
 - **Checkpoint loading under PyTorch 2.6+:** `Evaluator.load_model()` (Phase 7) failed to load any real checkpoint on PyTorch 2.6 or newer, where `torch.load` defaults to `weights_only=True` and rejects the pickled `CGCNNConfig` stored in a checkpoint's hyperparameters. This broke `evaluate_cli.py` and `explain_cli.py`, which both load models through the `Evaluator`; the existing tests missed it because they mock the loader. The allowlist introduced for Phase 9 now lives in `src/utils/checkpoints.py` (PRD §10.10) and is shared by the evaluation and inference subsystems, so the permitted globals are defined in exactly one place. Covered by a regression test that reproduces the 2.6 default through Lightning's own loader.
 - Removed a `bash.exe.stackdump` crash artifact that was committed by accident, and added `*.stackdump` to `.gitignore`.
+- **Config validation (PRD §122):** `dataset.yaml` and `model.yaml` now reject unknown keys with `UnknownConfigKeyError` instead of a raw `TypeError`, matching `experiment.yaml`. Validation covers top-level section keys and nested section keys.
+- **Split seed bug:** `CrystalDataModule` now accepts a `seed` parameter instead of hardcoding 42. `train_cli.py` and `report_cli.py` forward `experiment.seed` so the configured seed actually controls the train/val/test split. Default remains 42 for backward compatibility.
 
 ### Added
+- **Phase 11: Final Hardening and v1.0 Release.**
+  - **Unified CLI (`src/cli/main_cli.py`):** Single `project <command>` entry point (PRD §121) dispatching to `dataset`, `preprocess`, `train`, `evaluate`, `explain`, `predict`, `predict-batch`, `report`, `clean-cache` and `doctor`. Registered as `[project.scripts]` in `pyproject.toml`.
+  - **`project doctor`:** Environment health check — Python version, core library imports with versions, CUDA availability, config files, dataset presence, graph cache status.
+  - **`project clean-cache`:** Deletes cached `.pt` shards and `manifest*.json` files from the processed directory, with `--dry-run` support.
+  - **End-to-end integration tests (`tests/test_integration_e2e.py`):** 12 tests covering the full pipeline on a synthetic fixture (train → evaluate → predict → report), config validation rejection, split seed determinism, and unified CLI smoke tests (PRD §111).
+  - Version bumped to `1.0.0` in `pyproject.toml`.
+  - 169 tests pass; `black`, `isort`, `flake8` clean.
+
 - **Phase 10: Visualization and Reporting:** Fully implemented per PRD §17–§19, §94–§100.
   - `configs/experiment.yaml` and `src/config/experiment_config.py`: new `ExperimentConfig` defining run identity (`name`, `run_id`), the global `seed`, the artifact root (`experiments_dir`, `runs_dirname`), the published baseline MAE and the log level. Unknown keys raise `UnknownConfigKeyError` rather than being silently ignored (PRD §122), and a malformed file raises `ConfigFileError` rather than falling back to defaults.
   - **Run-ID concept:** a run is identified by `--run-id`, by `experiment.run_id`, or by a generated `"<name>_<UTC timestamp>"` such as `cgcnn_mp_e_form_20261010T153000Z`. IDs are sanitised to a single path segment, so a run can never write outside the runs root.
