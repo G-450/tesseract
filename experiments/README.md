@@ -4,6 +4,20 @@ Every artifact produced by a training, evaluation, explainability or
 inference run lives here. The contents are generated, not source, and are
 excluded from version control (`.gitignore`) except for this file.
 
+> **Retention policy: nothing in `experiments/` is ever deleted.**
+>
+> The directory is append-only. Runs are added; they are never removed,
+> overwritten or pruned, and neither are the legacy directories described at
+> the end of this file. Experiment artifacts are the record of what was
+> actually run — `cgcnn_full_history/metrics.csv` and
+> `checkpoints/cgcnn-epoch=99-val_loss=0.0070.ckpt` are the only surviving
+> trace of the one real 100-epoch training run, and the dataset and compute
+> needed to reproduce them are not cheap.
+>
+> The single exception is the explicit `report_cli.py --overwrite` flag,
+> which replaces one named run directory on request. It is never implied by
+> any other command: creating a run that already exists fails instead.
+
 ## Canonical layout (Phase 10)
 
 One run = one directory, named after its **run ID**. Runs never overwrite one
@@ -82,8 +96,14 @@ points and is unaffected by the run layout.
 ## Legacy directories
 
 These predate the layout above and were produced by earlier phases. They are
-kept for reference only; nothing reads them except when they are passed
-explicitly to `--log-dir` or `--checkpoint`.
+**retained permanently** under the policy above; nothing reads them except
+when they are passed explicitly to `--log-dir` or `--checkpoint`.
+
+They are deliberately not migrated into `runs/`. Folding them in would mean
+inventing a run ID, a seed and a provenance record that were never captured,
+which would misrepresent them as reproducible runs. Instead, a legacy run can
+be *referenced* from a new run directory with `--copy-logs` and
+`--copy-checkpoint` (see below), leaving the originals untouched.
 
 | Directory | Origin | Notes |
 | --- | --- | --- |
@@ -93,13 +113,18 @@ explicitly to `--log-dir` or `--checkpoint`.
 | `checkpoints/` | Phase 6 `ModelCheckpoint(dirpath="experiments/checkpoints")` | Checkpoints from several runs mixed together; `cgcnn-epoch=99-val_loss=0.0070.ckpt` is the best one. |
 | `plots/` | `plot_metrics.py` (local script) | Ad-hoc `mae_plot.png`, `r2_plot.png`, `rmse_plot.png`. |
 
-To fold a legacy run into the canonical layout, pass its artifacts to
-`report_cli.py` explicitly:
+To report on a legacy run through the canonical layout, pass its artifacts to
+`report_cli.py` explicitly. The flags *copy* the artifacts into the new run
+directory; the originals stay where they are.
 
 ```bash
 python src/cli/report_cli.py \
     --run-id legacy_100_epoch \
     --checkpoint "experiments/checkpoints/cgcnn-epoch=99-val_loss=0.0070.ckpt" \
-    --log-dir experiments/cgcnn_csv_logs \
-    --copy-logs --copy-checkpoint
+    --log-dir experiments/cgcnn_full_history/metrics.csv \
+    --copy-logs --copy-checkpoint --num-workers 0
 ```
+
+This is how `runs/legacy_100_epoch/` was produced: 13,276 test graphs, MAE
+0.0492 eV/atom, RMSE 0.0881, R² 0.9943. Its report has no learning-rate
+figure, because the legacy log has no `lr` column.
